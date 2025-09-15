@@ -125,9 +125,7 @@ def dataLoader_test(config, dataset='syn', warp_input=False, export_task='train'
             num_workers=workers_test,
             worker_init_fn=worker_init_fn
         )
-    # elif dataset == 'Coco' or 'Kitti' or 'Tum':
-    else:
-        # from datasets.Kitti import Kitti
+    elif dataset in ['Coco', 'Kitti', 'Tum', 'Colon']:
         logging.info(f"load dataset from : {dataset}")
         Dataset = get_module('datasets', dataset)
         test_set = Dataset(

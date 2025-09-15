@@ -160,7 +160,7 @@ def pltImshow(img):
 def loadConfig(filename):
     import yaml
     with open(filename, 'r') as f:
-        config = yaml.load(f)
+        config = yaml.load(f, Loader=yaml.Loader)
     return config
 
 def append_csv(file='foo.csv', arr=[]):
@@ -685,7 +685,7 @@ def compute_valid_mask(image_shape, inv_homography, device='cpu', erosion_radius
         homography: Tensor of shape (B, 8) or (8,), where B is the batch size.
         `erosion_radius: radius of the margin to be discarded.
 
-    Returns: a Tensor of type `tf.int32` and shape (H, W).
+    Returns: A boolean mask of shape (B, H, W) indicating valid pixels. dtype=torch.float32.
     """
     # mask = H_transform(tf.ones(image_shape), homography, interpolation='NEAREST')
     # mask = H_transform(tf.ones(image_shape), homography, interpolation='NEAREST')
@@ -702,6 +702,36 @@ def compute_valid_mask(image_shape, inv_homography, device='cpu', erosion_radius
             mask[i, :, :] = cv2.erode(mask[i, :, :], kernel, iterations=1)
 
     return torch.tensor(mask).to(device)
+
+def compute_valid_mask_with_extra_mask(extra_mask: torch.Tensor, inv_homography: torch.Tensor, device='cpu', erosion_radius=0) -> torch.Tensor:
+    """
+    Computes a binary mask transformed by the inverse homography.
+
+    :param extra_mask: A binary mask of shape (H, W).dtype=torch.float32.
+    :type extra_mask: torch.Tensor
+    :inv_homography: The inverse homography matrix of shape (B, 3, 3) or (3, 3).
+    :type inv_homography: torch.Tensor
+    :device: The device to perform the computation on (default: 'cpu').
+    :type device: str
+    :erosion_radius: The radius for erosion to remove artifacts (default: 0).
+    :type erosion_radius: int
+    :return: A binary mask of shape (B, H, W) after applying the inverse homography and erosion. dtype=torch.float32
+    :rtype: torch.Tensor
+    """
+    if inv_homography.dim() == 2:
+        inv_homography = inv_homography.view(-1, 3, 3)
+    batch_size = inv_homography.shape[0]
+    # mask = torch.ones(batch_size, 1, image_shape[0], image_shape[1]).to(device)
+    mask = extra_mask.repeat(batch_size, 1, 1, 1).to(device)
+    mask = inv_warp_image_batch(mask, inv_homography, device=device, mode='nearest')
+    mask = mask.view(batch_size, extra_mask.shape[1], extra_mask.shape[2])
+    mask = mask.cpu().numpy()
+    if erosion_radius > 0:
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (erosion_radius*2,)*2)
+        for i in range(batch_size):
+            mask[i, :, :] = cv2.erode(mask[i, :, :], kernel, iterations=1)
+    return torch.tensor(mask).to(device)
+
 
 
 def normPts(pts, shape):
@@ -775,6 +805,7 @@ def descriptor_loss(descriptors, descriptors_warped, homographies, mask_valid=No
         # shape = torch.tensor(list(descriptors.shape[2:]))*torch.tensor([cell_size, cell_size]).type(torch.FloatTensor).to(device)
         shape = torch.tensor([H, W]).type(torch.FloatTensor).to(device)
         # compute the center pixel of every cell in the image
+        # import pdb; pdb.set_trace()
 
         coor_cells = torch.stack(torch.meshgrid(torch.arange(Hc), torch.arange(Wc)), dim=2)
         coor_cells = coor_cells.type(torch.FloatTensor).to(device)
@@ -801,6 +832,8 @@ def descriptor_loss(descriptors, descriptors_warped, homographies, mask_valid=No
         # compute the pairwise distance
         cell_distances = coor_cells - warped_coor_cells
         cell_distances = torch.norm(cell_distances, dim=-1)
+     
+
         ##### check
     #     print("descriptor_dist: ", descriptor_dist)
         mask = cell_distances <= descriptor_dist # 0.5 # trick
@@ -808,6 +841,9 @@ def descriptor_loss(descriptors, descriptors_warped, homographies, mask_valid=No
         mask = mask.type(torch.FloatTensor).to(device)
 
     # compute the pairwise dot product between descriptors: d^t * d
+
+    ############### bug in memory consumption of dot product ###############
+    # import pdb; pdb.set_trace()
     descriptors = descriptors.transpose(1, 2).transpose(2, 3)
     descriptors = descriptors.view((batch_size, Hc, Wc, 1, 1, -1))
     descriptors_warped = descriptors_warped.transpose(1, 2).transpose(2, 3)
@@ -815,6 +851,22 @@ def descriptor_loss(descriptors, descriptors_warped, homographies, mask_valid=No
     dot_product_desc = descriptors * descriptors_warped
     dot_product_desc = dot_product_desc.sum(dim=-1)
     ## dot_product_desc.shape = [batch_size, Hc, Wc, Hc, Wc, desc_len]
+    ############### bug in memory consumption of dot product ###############
+
+    # # ---------- pair-wise dot product via bmm ----------
+    # TODO: test new impementation
+    # # permute to [B, Hc, Wc, D] and flatten to [B, N, D]
+    # descriptors  = descriptors.permute(0, 2, 3, 1).contiguous()
+    # descriptors_warped = descriptors_warped.permute(0, 2, 3, 1).contiguous()
+    # B, Hc, Wc, D = descriptors.shape
+    # N = Hc * Wc
+
+    # descriptors  = descriptors.view(B, N, D)          # already L2-normalised by the network
+    # descriptors_warped = descriptors_warped.view(B, N, D)
+
+    # dot_product_desc = torch.bmm(descriptors, descriptors_warped.transpose(1, 2))  # [B, N, N]
+    # dot_product_desc = dot_product_desc.view(B, Hc, Wc, Hc, Wc)      # restore 5-D shape
+    # # ---------- pair-wise dot product via bmm ----------
 
     # hinge loss
     positive_dist = torch.max(margin_pos - dot_product_desc, torch.tensor(0.).to(device))
@@ -831,8 +883,19 @@ def descriptor_loss(descriptors, descriptors_warped, homographies, mask_valid=No
     loss_desc = lamda_d * mask * positive_dist + (1 - mask) * negative_dist
     loss_desc = loss_desc * mask_valid
         # mask_validg = torch.ones_like(mask)
-    ##### bug in normalization
-    normalization = (batch_size * (mask_valid.sum()+1) * Hc * Wc)
+
+    ######################### bug in normalization #########################
+    # import pdb; pdb.set_trace()
+    # normalization = (batch_size * (mask_valid.sum()+1) * Hc * Wc)
+    ######################### bug in normalization #########################
+
+    # ---------- correct normalization ----------
+    # valid source pixels = mask_valid.sum(); each contributes Hc*Wc target comparisons. Avoid summing 1, but add a small epsilon to avoid division by zero.
+    #TODO: test new implementation
+    normalization = mask_valid.sum() * (Hc * Wc) + 1e-6
+    loss_desc = loss_desc.sum() / normalization
+    # ---------- correct normalization ----------
+
     pos_sum = (lamda_d * mask * positive_dist/normalization).sum()
     neg_sum = ((1 - mask) * negative_dist/normalization).sum()
     loss_desc = loss_desc.sum() / normalization

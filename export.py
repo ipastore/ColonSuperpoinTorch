@@ -218,7 +218,7 @@ def export_detector_homoAdapt_gpu(config, output_dir, args):
 
     ## parameters
     nms_dist = config["model"]["nms"]  # 4
-    top_k = config["model"]["top_k"]
+    top_k = config["model"]["top_k"] if "top_k" in config["model"] else None
     homoAdapt_iter = config["data"]["homography_adaptation"]["num"]
     conf_thresh = config["model"]["detection_threshold"]
     nn_thresh = 0.7
@@ -261,7 +261,7 @@ def export_detector_homoAdapt_gpu(config, output_dir, args):
             device=device,
         )
         print("==> Successfully loaded pre-trained network.")
-
+        
         fe.net_parallel()
         print(path)
         # save to files
@@ -342,9 +342,9 @@ def export_detector_homoAdapt_gpu(config, output_dir, args):
 
         ## output images for visualization labels
         if output_images:
-            img_pts = draw_keypoints(img_2D * 255, pts.transpose())
+            img_pts = draw_keypoints(img_2D * 255, pts.transpose(), radius=5, s=2)
             f = save_output / (str(count) + ".png")
-            if task == "Coco" or "Kitti":
+            if task == "Coco" or task == "Kitti" or task == "Colon":
                 f = save_output / (name + ".png")
             saveImg(img_pts, str(f))
         count += 1
@@ -397,7 +397,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     with open(args.config, "r") as f:
-        config = yaml.load(f)
+        config = yaml.load(f, Loader=yaml.Loader)
     print("check config!! ", config)
 
     output_dir = os.path.join(EXPER_PATH, args.exper_name)

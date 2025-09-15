@@ -1,21 +1,28 @@
 """Testing file (not sorted yet)
 
 """
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import torch
+# import torch
 import numpy as np
+import glob
 
 
-from utils.utils import inv_warp_image_batch
-from numpy.linalg import inv
+# from utils.utils import inv_warp_image_batch
+# from numpy.linalg import inv
 import cv2
 import matplotlib.pyplot as plt
 from utils.draw import plot_imgs
 
 from utils.utils import pltImshow
-path = '/home/yoyee/Documents/deepSfm/logs/superpoint_hpatches_pretrained/predictions/'
-for i in range(10):
-    data = np.load(path + str(i) + '.npz')
+# path = '/home/yoyee/Documents/deepSfm/logs/superpoint_hpatches_pretrained/predictions/'
+path = '/home/student/ColonSuperpoinTorch/logs/magicpoint_coco_downsize1/predictions/train'
+npz_files = sorted(glob.glob(os.path.join(path, '*.npz')))
+
+for i, file_path in enumerate(npz_files):
+    data = np.load(file_path)
+    import pdb; pdb.set_trace()
     # p1 = '/home/yoyee/Documents/deepSfm/datasets/HPatches/v_abstract/1.ppm'
     # p2 = '/home/yoyee/Documents/deepSfm/datasets/HPatches/v_abstract/2.ppm'
     # H = '/home/yoyee/Documents/deepSfm/datasets/HPatches/v_abstract/H_1_2'

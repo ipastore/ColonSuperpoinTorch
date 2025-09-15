@@ -80,7 +80,7 @@ if __name__ == '__main__':
 
     torch.set_default_tensor_type(torch.FloatTensor)
     with open(filename, 'r') as f:
-        config = yaml.load(f)
+        config = yaml.load(f, Loader=yaml.Loader)
 
     task = config['data']['dataset']
     # data loading

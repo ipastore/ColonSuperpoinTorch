@@ -25,18 +25,33 @@ This repo is a bi-product of our paper [deepFEPE(IROS 2020)](https://github.com/
 
 
 ## Installation
-### Requirements
+<!-- ### Requirements
 - python == 3.6
 - pytorch >= 1.1 (tested in 1.3.1)
 - torchvision >= 0.3.0 (tested in 0.4.2)
-- cuda (tested in cuda10)
+- cuda (tested in cuda10) -->
 
 ```
-conda create --name py36-sp python=3.6
-conda activate py36-sp
-pip install -r requirements.txt
-pip install -r requirements_torch.txt # install pytorch
+conda create -n py38-sp python=3.8 -y
+conda activate py38-sp
+conda install pytorch==1.10.2 torchvision==0.11.3 cudatoolkit=11.3 -c pytorch -y
+pip install -r requirements_py38.txt   
+
 ```
+### Verify installation
+```
+python - <<'PY'
+import cv2, torch, torchvision
+print("cv2 version:", cv2.__version__)
+print("torch:", torch.__version__, "CUDA:", torch.version.cuda, "GPU:", torch.cuda.get_device_name(0))
+from torchvision.ops import roi_pool
+x = torch.zeros(1,1,32,32, device='cuda')
+r = torch.tensor([[0,2,2,20,20]], device='cuda', dtype=torch.float)
+print("roi_pool ok:", roi_pool(x,r,(4,4)).device)
+PY
+```
+
+Output should be: 1.3.1 and True.
 
 ### Path setting
 - paths for datasets ($DATA_DIR), logs are set in `setting.py`

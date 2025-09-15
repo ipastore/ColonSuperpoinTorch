@@ -1,0 +1,19 @@
+# Datasets
+datasets/
+
+# Catch all __pycache__ directories
+**/__pycache__/
+
+# Runs
+runs/
+
+# Weights
+*.pth*
+
+# Outputs
+notebooks/outputs/
+colon_visualization/
+
+# Logs
+logs/
+

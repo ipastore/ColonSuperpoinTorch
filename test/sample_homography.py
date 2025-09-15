@@ -46,7 +46,7 @@ def test_sample_homography():
   filename = '../configs/superpoint_coco_train.yaml'
   import yaml
   with open(filename, 'r') as f:
-    config = yaml.load(f)
+    config = yaml.load(f, Loader=yaml.Loader)
   test_tf = False
   test_corner_def = True
 

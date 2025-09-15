@@ -71,6 +71,8 @@ class SuperPointFrontend_torch(object):
 
     def loadModel(self, weights_path):
         # Load the network in inference mode.
+        trained = False
+        
         if weights_path[-4:] == '.tar':
             trained = True
         # if cuda:
@@ -348,8 +350,10 @@ class SuperPointFrontend_torch(object):
             with torch.no_grad():
                 # outs = self.net.forward(inp, subpixel=self.subpixel)
                 outs = self.net.forward(inp)
-                # semi, coarse_desc = outs[0], outs[1]
-                semi, coarse_desc = outs['semi'], outs['desc']
+                if isinstance(outs, tuple):
+                    semi, coarse_desc = outs[0], outs[1]
+                else:
+                    semi, coarse_desc = outs['semi'], outs['desc']
 
         # as tensor
         from utils.utils import labels2Dto3D, flattenDetection

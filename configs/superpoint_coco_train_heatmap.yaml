@@ -2,7 +2,7 @@ data:
     # name: 'coco'
     dataset: 'Coco' # 'coco'
 
-    labels: datasets/magicpoint_synth20_homoAdapt100_coco_f1/predictions
+    labels: logs/magicpoint_coco_downsize4/predictions
     root: # datasets/COCO
     root_split_txt: # /datasets/COCO
 
@@ -14,14 +14,18 @@ data:
 
     cache_in_memory: false
     preprocessing:
-        resize: [240, 320]
-        # resize: [480, 640]
+        # resize: [960, 1344]
+        # resize: [480, 672]
+        resize: [240, 336]
+        # resize: [120, 168]
     augmentation:
         photometric:
-            enable: true
+            # enable: true
+            enable: false
             primitives: [
-                'random_brightness', 'random_contrast', 'additive_speckle_noise',
-                'additive_gaussian_noise', 'additive_shade', 'motion_blur']
+                # 'random_brightness', 'random_contrast', 'additive_speckle_noise',
+                # 'additive_gaussian_noise', 'additive_shade', 'motion_blur'
+                ]
             params:
                 random_brightness: {max_abs_change: 50}
                 random_contrast: {strength_range: [0.5, 1.5]}
@@ -64,19 +68,19 @@ model:
         loss_type: 'softmax'
 
 
-    batch_size: 8 # 32
-    eval_batch_size: 8 # 32
+    batch_size: 1 # 32
+    eval_batch_size: 1 # 32
     learning_rate: 0.0001 # 0.0001
     detection_threshold: 0.015 # 0.015
     lambda_loss: 1 # 1
     nms: 4
     dense_loss:
-        enable: false
+        enable: true
         params:
             descriptor_dist: 4 # 4, 7.5
             lambda_d: 800 # 800
     sparse_loss:
-        enable: true
+        enable: false
         params:
             num_matching_attempts: 1000
             num_masked_non_matches_per_match: 100
@@ -91,15 +95,15 @@ model:
         # settings: 'predict flow directly'
         # loss_func: 'subpixel_loss_no_argmax' # subpixel_loss, subpixel_loss_no_argmax
 
-retrain: True # set true for new model
-reset_iter: True # set true to set the iteration number to 0
-train_iter: 200000 # 170000
+retrain: false # set true for new model
+reset_iter: true # set true to set the iteration number to 0
+train_iter: 200 #200000 # 170000
 validation_interval: 200 # 2000
 tensorboard_interval: 200 # 200
 save_interval: 200 # 2000
 validation_size: 5
 
-pretrained: 
+pretrained: 'logs/magicpoint_synth_t2/checkpoints/superPointNet_100000_checkpoint.pth.tar'
 
 
 

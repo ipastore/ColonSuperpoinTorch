@@ -1,0 +1,22 @@
+# torch >= 0.4.1
+# torchvision
+argparse
+scipy==1.10.1
+opencv-python==4.5.5.64
+opencv-contrib-python==4.5.5.64
+numpy<1.24
+matplotlib
+imageio
+tqdm
+tensorflow-cpu==2.8.4
+tensorboardX
+tqdm
+pyyaml
+imageio
+imgaug
+jupyter
+scikit-learn
+
+torchgeometry
+torchsummary
+coloredlogs
