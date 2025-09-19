@@ -2,21 +2,27 @@ data:
     dataset: 'Colon'
     images_path: './datasets/endomapper/toy_33/'
     camera_mask_path: './datasets/endomapper/camera_mask.png'
-    export_folder: 'val' # train, val
+    use_specular_mask: true  # If false, treat all pixels as non-specular (specular mask = ones)
+    # use_specular_mask: false
+    export_folder: 'train' # train, val
     preprocessing:
-        downsize: 1 # 1, 2, 4, 8
-        # resize: [240, 320] 
-        # resize: [480, 640] 
-    gaussian_label:
-        enable: false # false
+        downsize: 4 # 1, 2, 4, 8    # This is used instead of resize to only select dimensions divisible by 8
+        # 1 = resize: [960, 1344]   # Original size of Endomapper images
+        # 2 = resize: [480, 672]
+        # 4 = resize: [240, 336]     # training size of superpoint paper
+        # 8 = resize: [120, 168]
+
+    gaussian_label: 
+        enable: false # Set to false for export
         sigma: 1.
+
     augmentation:
         photometric:
-            enable: false
+            enable: false   # Set to false for export
     homography_adaptation:
         enable: true
-        num: 10 # with 100 and downsize 1: OOM: 30GB
-        aggregation: 'sum'
+        num: 2 # Make a swipe from 2 to 100 
+        aggregation: 'sum' # Just use sum
         filter_counts: 0
         homographies:
             params:
@@ -31,23 +37,23 @@ data:
                 patch_ratio: 0.85
 
 training:
-    workers_test: 0 # Set to 0 for debugging, 2 for production
+    workers_test: 2 # Set to 0 for debugging, 2 for production
 
 model:
-    name: 'SuperPointNet_pretrained'        # Choose this one to load wieghts from superpoint_v1.pth
-    # name: 'SuperPointNet_gauss2' # 'SuperPointNet'
+    # name: 'SuperPointNet_pretrained'        # Choose this one to load wieghts from superpoint_v1.pth
+    name: 'SuperPointNet_gauss2' 
+    # name:  'SuperPointNet'
     params: {
     }    
     batch_size: 1
     eval_batch_size: 1
-    detection_threshold: 0.015 # 0.015
-    nms: 4
+    detection_threshold: 0.015 # Swipe from 0.02 to 0.0001
+    nms: 4 # 4
     # top_k: 600
     subpixel:
-        enable: false   # What is this?
+        enable: false   
 
 # pretrained: 'logs/magicpoint_synth20/checkpoints/superPointNet_200000_checkpoint.pth.tar' # 'SuperPointNet'
 # pretrained: 'logs/magicpoint_synth_t2/checkpoints/superPointNet_100000_checkpoint.pth.tar'
-pretrained: pretrained/superpoint_v1.pth 
-
-
+# pretrained: pretrained/superpoint_v1.pth 
+pretrained: "logs/old/superpoint_coco_heat2_0/checkpoints/superPointNet_170000_checkpoint.pth.tar"

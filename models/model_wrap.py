@@ -350,6 +350,7 @@ class SuperPointFrontend_torch(object):
             with torch.no_grad():
                 # outs = self.net.forward(inp, subpixel=self.subpixel)
                 outs = self.net.forward(inp)
+                ##TODO: spt HARDCODED solution for different output format, should fix with a more elegant solution ##
                 if isinstance(outs, tuple):
                     semi, coarse_desc = outs[0], outs[1]
                 else:

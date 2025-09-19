@@ -60,7 +60,6 @@ training:
 
 model:
     # name: 'magic_point'
-    # name: 'SuperPointNet_heatmap'
     name: 'SuperPointNet_gauss2'
     params: {
     }

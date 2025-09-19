@@ -156,3 +156,7 @@ class PoseExpNet(nn.Module):
             return [exp_mask1, exp_mask2, exp_mask3, exp_mask4], pose
         else:
             return exp_mask1, pose
+
+# Alias to satisfy loader expecting `SuperPointNet_pretrained`
+# symbol while preserving original class name.
+SuperPointNet_pretrained = SuperPointNet

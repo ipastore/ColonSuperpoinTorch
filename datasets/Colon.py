@@ -1,3 +1,13 @@
+"""
+Colon dataset utilities.
+
+Changelog:
+- 2025-09-15: Add `use_specular_mask` config option to optionally disable
+  specular mask usage when building extra masks. When set to False, the
+  specular mask defaults to all ones (treat all pixels as non-specular), and
+  only the camera mask (if provided) is applied.
+"""
+
 import numpy as np
 # import tensorflow as tf
 import torch
@@ -17,6 +27,10 @@ class Colon(data.Dataset):
         'cache_in_memory': False,
         'validation_size': 100,
         'truncate': None,
+        # If False, disable specular mask usage and treat all pixels as
+        # non-specular (i.e., specular mask = all ones). Camera mask is still
+        # applied if provided. See __getitem__ -> _get_extra_mask.
+        'use_specular_mask': True,
         'camera_mask_path': None,
         'images_path': None,
         'preprocessing': {
@@ -129,22 +143,24 @@ class Colon(data.Dataset):
         # if self.config['preprocessing']['resize']:
         #     self.sizer = self.config['preprocessing']['resize']
 
-        # self.gaussian_label = False
-        # if self.config['gaussian_label']['enable']:
-        #     self.gaussian_label = True
-        #     y, x = self.sizer
-        #     # self.params_transform = {'crop_size_y': y, 'crop_size_x': x, 'stride': 1, 'sigma': self.config['gaussian_label']['sigma']}{
+        self.gaussian_label = False
+        if self.config['gaussian_label']['enable']:
+            self.gaussian_label = True
+            # y, x = self.sizer
+            # self.params_transform = {'crop_size_y': y, 'crop_size_x': x, 'stride': 1, 'sigma': self.config['gaussian_label']['sigma']}{
         if self.config['preprocessing']['downsize']:
             self.downsize = self.config['preprocessing']['downsize']
         else:
             raise ValueError("Downsize configuration is missing.")
+        # Allow the camera mask to be optional. If it's not provided in the
+        # configuration (None), keep `self.camera_mask_path` as None and
+        # produce an all-ones camera mask at runtime so the pipeline that
+        # multiplies camera+specular masks still works without changing
+        # downstream logic. This keeps changes minimal and avoids forcing
+        # callers to provide a mask when not needed.
+        self.camera_mask_path = self.config.get('camera_mask_path', None)
 
-        if self.config['camera_mask_path']:
-            self.camera_mask_path = self.config['camera_mask_path']
-        else:
-            raise ValueError("Camera mask path is not set in the configuration.")
-
-        pass
+    pass
 
     def putGaussianMaps(self, center, accumulate_confid_map):
         crop_size_y = self.params_transform['crop_size_y']
@@ -209,20 +225,20 @@ class Colon(data.Dataset):
 
 
     def _compute_specular_mask(self, image: np.ndarray, threshold=0.86, kernel_size=5, iterations=10) -> np.ndarray:
-        """
-        Compute specular mask for the given image. Specularities are considered 0 (to mask out) and
-        non specularities are considered 1 (to keep). The mask is eroded to remove small noise.
+        """Compute a specular mask from an image.
 
-        :param image: numpy array of shape (H, W, 1). dtype = float32 or int. Range: [0, 1].
-        :type image: numpy.ndarray
-        :param threshold: Threshold value to distinguish specularities from non-specularities.
-        :type threshold: float
-        :param kernel_size: Size of the kernel used for erosion.
-        :type kernel_size: int
-        :param iterations: Number of erosion iterations.
-        :type iterations: int
-        :return: specular mask of shape (H, W). dtype = float32. Range: [0, 1].
-        :rtype: numpy.ndarray
+        This generates a binary mask where specularities are 0 (masked out) and
+        non-specular pixels are 1 (kept). The mask is eroded to remove small
+        noisy regions.
+
+        Args:
+            image: Grayscale image of shape (H, W) with values in [0, 1].
+            threshold: Pixel threshold to distinguish specular vs. non-specular.
+            kernel_size: Erosion kernel size for mask cleanup.
+            iterations: Number of erosion iterations.
+
+        Returns:
+            A float32 mask array of shape (H, W) with values in {0.0, 1.0}.
         """
 
         # Specularities = 0; # Non-specularities = 1
@@ -244,11 +260,37 @@ class Colon(data.Dataset):
             image: tensor (H, W,
         '''
 
-        def _get_extra_mask(image):
+        def _get_extra_mask(image: np.ndarray) -> np.ndarray:
+            """Build the extra mask combining camera and specular masks.
+
+            The resulting mask is the element-wise product of the camera mask
+            and the specular mask. If ``use_specular_mask`` is False, the
+            specular mask defaults to all ones (treat all pixels as
+            non-specular), so only the camera mask is applied.
+
+            Args:
+                image: Grayscale input image, used to compute specular mask.
+
+            Returns:
+                Extra mask of shape (H, W) as float32 in [0, 1].
+            """
+            # If no camera mask path was provided, use an all-ones camera mask
+            # (i.e. no masking) so downstream code that multiplies camera and
+            # specular masks continues to work without branching elsewhere.
             camera_mask_path = self.camera_mask_path
-            camera_mask = self._read_image(camera_mask_path)
-            camera_mask = 1 - camera_mask
-            specular_mask = self._compute_specular_mask(image)
+            if camera_mask_path is None:
+                # create an all-ones mask same shape as image
+                camera_mask = np.ones_like(image, dtype=np.float32)
+            else:
+                camera_mask = self._read_image(camera_mask_path)
+                camera_mask = 1 - camera_mask
+
+            if self.config.get('use_specular_mask', True):
+                specular_mask = self._compute_specular_mask(image)
+            else:
+                # Treat all pixels as non-specular: specular_mask = all ones
+                specular_mask = np.ones_like(image, dtype=np.float32)
+
             extra_mask = camera_mask * specular_mask
             return extra_mask
 
@@ -501,4 +543,3 @@ class Colon(data.Dataset):
         image = image[:,:,np.newaxis]
         heatmaps = augmentation(image)
         return heatmaps.squeeze()
-

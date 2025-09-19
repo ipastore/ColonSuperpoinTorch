@@ -342,7 +342,7 @@ def export_detector_homoAdapt_gpu(config, output_dir, args):
 
         ## output images for visualization labels
         if output_images:
-            img_pts = draw_keypoints(img_2D * 255, pts.transpose(), radius=5, s=2)
+            img_pts = draw_keypoints(img_2D * 255, pts.transpose(), radius=2, s=2)
             f = save_output / (str(count) + ".png")
             if task == "Coco" or task == "Kitti" or task == "Colon":
                 f = save_output / (name + ".png")

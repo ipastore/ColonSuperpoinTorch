@@ -885,15 +885,15 @@ def descriptor_loss(descriptors, descriptors_warped, homographies, mask_valid=No
         # mask_validg = torch.ones_like(mask)
 
     ######################### bug in normalization #########################
-    # import pdb; pdb.set_trace()
-    # normalization = (batch_size * (mask_valid.sum()+1) * Hc * Wc)
+    import pdb; pdb.set_trace()
+    normalization = (batch_size * (mask_valid.sum()+1) * Hc * Wc)
     ######################### bug in normalization #########################
 
     # ---------- correct normalization ----------
-    # valid source pixels = mask_valid.sum(); each contributes Hc*Wc target comparisons. Avoid summing 1, but add a small epsilon to avoid division by zero.
-    #TODO: test new implementation
-    normalization = mask_valid.sum() * (Hc * Wc) + 1e-6
-    loss_desc = loss_desc.sum() / normalization
+    # # valid source pixels = mask_valid.sum(); each contributes Hc*Wc target comparisons. Avoid summing 1, but add a small epsilon to avoid division by zero.
+    # #TODO: test new implementation
+    # normalization = mask_valid.sum() * (Hc * Wc) + 1e-6
+    # loss_desc = loss_desc.sum() / normalization
     # ---------- correct normalization ----------
 
     pos_sum = (lamda_d * mask * positive_dist/normalization).sum()

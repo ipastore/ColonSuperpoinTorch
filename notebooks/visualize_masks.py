@@ -15,9 +15,15 @@ def visualize_mask_for_image(config, image_path, camera_mask_path, output_path=N
     colon = Colon(**config)
     print("Reading image and camera mask...")
     img_np = colon._read_image(image_path)
-    camera_np = colon._read_image(camera_mask_path)
-    camera_np = 1 - camera_np 
-    specular_np = colon._compute_specular_mask(img_np)
+    if camera_mask_path is None:
+        camera_np = np.ones_like(img_np)
+    else:
+        camera_np = colon._read_image(camera_mask_path)
+        camera_np = 1 - camera_np
+    if config.get('use_specular_mask', True):
+        specular_np = colon._compute_specular_mask(img_np)
+    else:
+        specular_np = np.ones_like(img_np)
     combined_np = camera_np * specular_np
     
     print("Generating visualization plot...")
@@ -25,19 +31,20 @@ def visualize_mask_for_image(config, image_path, camera_mask_path, output_path=N
     plt.figure(figsize=(16, 12))
     
     plt.subplot(221)
-    plt.imshow(img_np.squeeze(), cmap='gray')
+    # Explicit vmin/vmax so constant images (all ones) don't render black
+    plt.imshow(img_np.squeeze(), cmap='gray', vmin=0.0, vmax=1.0)
     plt.title('Original Image')
     
     plt.subplot(222)
-    plt.imshow(camera_np.squeeze(), cmap='gray')
+    plt.imshow(camera_np.squeeze(), cmap='gray', vmin=0.0, vmax=1.0)
     plt.title('Camera Mask (Black = Invalid)')
     
     plt.subplot(223)
-    plt.imshow(specular_np.squeeze(), cmap='gray')
+    plt.imshow(specular_np.squeeze(), cmap='gray', vmin=0.0, vmax=1.0)
     plt.title('Specular Mask (Black = Invalid)')
     
     plt.subplot(224)
-    plt.imshow(combined_np.squeeze(), cmap='gray')
+    plt.imshow(combined_np.squeeze(), cmap='gray', vmin=0.0, vmax=1.0)
     plt.title('Combined Mask (Black = Invalid)')
     
     plt.tight_layout()
@@ -56,14 +63,18 @@ def visualize_mask_for_image(config, image_path, camera_mask_path, output_path=N
 if __name__ == "__main__":
     # Replace these with your actual paths
     IMAGE_PATH = "/home/student/ColonSuperpoinTorch/datasets/endomapper/toy_33/train/out04717.png"  
-    CAMERA_MASK_PATH = "/home/student/ColonSuperpoinTorch/datasets/endomapper/camera_mask.png"
+    # CAMERA_MASK_PATH = "/home/student/ColonSuperpoinTorch/datasets/endomapper/camera_mask.png"
+    CAMERA_MASK_PATH = None
     OUTPUT_PATH = "/home/student/ColonSuperpoinTorch/notebooks/outputs/example_mask_visualization.png"
+    # USE_SPECULAR_MASK = True  # Set to False to disable specular mask
+    USE_SPECULAR_MASK = False  # Set to False to disable specular mask
 
     config = {
         'dataset': 'Colon',
         'export_folder': 'train',
         'camera_mask_path': CAMERA_MASK_PATH,
-        'images_path': '/home/student/ColonSuperpoinTorch/datasets/endomapper/toy_33/train',
+        'use_specular_mask': USE_SPECULAR_MASK,
+        'images_path': '/home/student/ColonSuperpoinTorch/datasets/endomapper/toy_33/',
         'preprocessing': {
             'downsize': 1,
         }

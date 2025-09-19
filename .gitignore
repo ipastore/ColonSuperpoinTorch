@@ -1,5 +1,6 @@
 # Datasets
-datasets/
+datasets/endomapper
+datasets/COCO
 
 # Catch all __pycache__ directories
 **/__pycache__/
@@ -17,3 +18,11 @@ colon_visualization/
 # Logs
 logs/
 
+# Experimetns
+experiments/
+
+# Results
+results/
+
+#VS-code settings
+.vscode/

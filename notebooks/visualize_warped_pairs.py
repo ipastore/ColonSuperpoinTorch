@@ -65,20 +65,20 @@ for i, sample in enumerate(train_loader):
 
     img = d['image'].squeeze(0)
 
-    # plt.figure(figsize=(10, 5))
-    # plt.imshow(img, cmap='gray')
-    # plt.title(f"Raw Image Visualization - Shape: {img.shape}")
-    # plt.axis('off')
-    # plt.show()
+    plt.figure(figsize=(10, 5))
+    plt.imshow(img, cmap='gray')
+    plt.title(f"Raw Image Visualization - Shape: {img.shape}")
+    plt.axis('off')
+    plt.show()
 
     # import pdb; pdb.set_trace()
     warped = d['warped_img'].squeeze(0)
 
-    # plt.figure(figsize=(10, 5))
-    # plt.imshow(warped, cmap='gray')
-    # plt.title(f"Raw Image Visualization - Shape: {warped.shape}")
-    # plt.axis('off')
-    # plt.show()
+    plt.figure(figsize=(10, 5))
+    plt.imshow(warped, cmap='gray')
+    plt.title(f"Raw Image Visualization - Shape: {warped.shape}")
+    plt.axis('off')
+    plt.show()
 
     # import pdb; pdb.set_trace()
 
@@ -100,50 +100,70 @@ for i, sample in enumerate(train_loader):
     img_draw = draw_keypoints(img, kpts.transpose(), color=(0, 255, 0), radius=5, s=2)
     warped_draw = draw_keypoints(warped, warped_kpts.transpose(), color=(0, 255, 0), radius=5, s=2)
 
+    plt.figure(figsize=(10, 5))
+    plt.imshow(img_draw, cmap='gray')
+    plt.title(f"Original Image with Keypoints - Shape: {img_draw.shape}")
+    plt.axis('off')
+    plt.show()
+
+    plt.figure(figsize=(10, 5))
+    plt.imshow(warped_draw, cmap='gray')
+    plt.title(f"Warped Image with Keypoints - Shape: {warped_draw.shape}")
+    plt.axis('off')
+    plt.show()
+
+    import pdb; pdb.set_trace()
     valid_mask = d['valid_mask'].squeeze(0)
     
 
-    # plt.figure(figsize=(10, 5))
-    # plt.imshow(valid_mask, cmap='gray', vmin=0, vmax=1)
-    # plt.title(f"Raw Image Visualization - Shape: {valid_mask.shape}")
-    # plt.axis('off')
-    # plt.show()
+    plt.figure(figsize=(10, 5))
+    plt.imshow(valid_mask, cmap='gray', vmin=0, vmax=1)
+    plt.title(f"Valid Mask - Shape: {valid_mask.shape}")
+    plt.axis('off')
+    plt.show()
 
 
     warped_valid_mask = d['warped_valid_mask'].squeeze(0)
 
-    # plt.figure(figsize=(10, 5))
-    # plt.imshow(warped_valid_mask, cmap='gray', vmin=0, vmax=1)
-    # plt.title(f"Raw Image Visualization - Shape: {warped_valid_mask.shape}")
-    # plt.axis('off')
-    # plt.show()
+    plt.figure(figsize=(10, 5))
+    plt.imshow(warped_valid_mask, cmap='gray', vmin=0, vmax=1)
+    plt.title(f"Warped Valid Mask - Shape: {warped_valid_mask.shape}")
+    plt.axis('off')
+    plt.show()
 
     # import pdb; pdb.set_trace()
 
 
-    # # Overlay invalid (inverted mask) in red
-    # img_draw_overlay = draw_overlay(img_draw, valid_mask, color=[0, 0, 255], alpha=0.5, s=scale)
-    # warped_draw_overlay = draw_overlay(warped_draw, warped_valid_mask, color=[0, 0, 255], alpha=0.5, s=scale)
+    # Overlay invalid (inverted mask) in red
+    img_draw_overlay = draw_overlay(img_draw, valid_mask, color=(0, 0, 255), alpha=0.5, s=scale)
+    warped_draw_overlay = draw_overlay(warped_draw, warped_valid_mask, color=(0, 0, 255), alpha=0.5, s=scale)
 
-    # plt.figure(figsize=(10, 5))
-    # plt.imshow(img_draw, cmap='gray', vmin=0, vmax=1)
-    # plt.title(f"Raw Image Visualization - Shape: {img_draw.shape}")
-    # plt.axis('off')
-    # plt.show()
+    plt.figure(figsize=(10, 5))
+    plt.imshow(img_draw_overlay, cmap='gray', vmin=0, vmax=1)
+    plt.title(f"Original Image with Overlay and keypoints- Shape: {img_draw_overlay.shape}")
+    plt.axis('off')
+    plt.show()
 
+    plt.figure(figsize=(10, 5))
+    plt.imshow(warped_draw_overlay, cmap='gray', vmin=0, vmax=1)
+    plt.title(f"Warped Image with Overlay and keypoints - Shape: {warped_draw_overlay.shape}")
+    plt.axis('off')
+    plt.show()  
     # import pdb; pdb.set_trace()
 
 
-    plot_imgs([img_draw, warped_draw],
-              ylabel=name,
-              titles=['original + labels', 'warped + labels'],
-              cmap='gray',
-              dpi=200)
 
-    save_path = f'{output_dir}/colon_pair_{i:02d}.png'
-    plt.savefig(save_path, dpi=200)
-    plt.close()
-    print(f'Pair {i} saved at {save_path}')
+    # plot_imgs([img_draw_overlay, warped_draw_overlay],
+    #           ylabel=name,
+    #           titles=['original + labels + mask', 'warped + labels + mask'],
+    #           cmap='gray',
+    #           normalize=True,
+    #           dpi=200)
+
+    # save_path = f'{output_dir}/colon_pair_{i:02d}.png'
+    # plt.savefig(save_path, dpi=200)
+    # plt.close()
+    # print(f'Pair {i} saved at {save_path}')
 
     if i >= 4:
         break

@@ -227,17 +227,29 @@ class Train_model_heatmap(Train_model_frontend):
         if train:
             # print("img: ", img.shape, ", img_warp: ", img_warp.shape)
             outs = self.net(img.to(self.device))
-            semi, coarse_desc = outs["semi"], outs["desc"]
+            if isinstance(outs, tuple):
+                semi, coarse_desc = outs[0], outs[1]
+            else:
+                semi, coarse_desc = outs["semi"], outs["desc"]
             if if_warp:
                 outs_warp = self.net(img_warp.to(self.device))
-                semi_warp, coarse_desc_warp = outs_warp["semi"], outs_warp["desc"]
+                if isinstance(outs_warp, tuple):
+                    semi_warp, coarse_desc_warp = outs_warp[0], outs_warp[1]
+                else:
+                    semi_warp, coarse_desc_warp = outs_warp["semi"], outs_warp["desc"]
         else:
             with torch.no_grad():
                 outs = self.net(img.to(self.device))
-                semi, coarse_desc = outs["semi"], outs["desc"]
+                if isinstance(outs, tuple):
+                    semi, coarse_desc = outs[0], outs[1]
+                else:
+                    semi, coarse_desc = outs["semi"], outs["desc"]
                 if if_warp:
                     outs_warp = self.net(img_warp.to(self.device))
-                    semi_warp, coarse_desc_warp = outs_warp["semi"], outs_warp["desc"]
+                    if isinstance(outs_warp, tuple):
+                        semi_warp, coarse_desc_warp = outs_warp[0], outs_warp[1]
+                    else:
+                        semi_warp, coarse_desc_warp = outs_warp["semi"], outs_warp["desc"]
                 pass
 
         # detector loss
@@ -263,7 +275,7 @@ class Train_model_heatmap(Train_model_frontend):
         ).float()
         mask_3D_flattened = self.getMasks(mask_2D, self.cell_size, device=self.device)
         loss_det = self.detector_loss(
-            input=outs["semi"],
+            input=semi,
             target=labels_3D.to(self.device),
             mask=mask_3D_flattened,
             loss_type=det_loss_type,
@@ -279,7 +291,7 @@ class Train_model_heatmap(Train_model_frontend):
                 mask_warp_2D, self.cell_size, device=self.device
             )
             loss_det_warp = self.detector_loss(
-                input=outs_warp["semi"],
+                input=semi_warp,
                 target=labels_3D.to(self.device),
                 mask=mask_3D_flattened,
                 loss_type=det_loss_type,
