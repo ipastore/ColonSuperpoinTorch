@@ -26,3 +26,6 @@ results/
 
 #VS-code settings
 .vscode/
+
+# Venv
+.venv/
