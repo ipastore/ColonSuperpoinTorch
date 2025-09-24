@@ -342,11 +342,26 @@ def export_detector_homoAdapt_gpu(config, output_dir, args):
 
         ## output images for visualization labels
         if output_images:
-            img_pts = draw_keypoints(img_2D * 255, pts.transpose(), radius=2, s=2)
+            img_pts = draw_keypoints(img_2D * 255, pts.transpose(), radius=1, s=1)
             f = save_output / (str(count) + ".png")
             if task == "Coco" or task == "Kitti" or task == "Colon":
                 f = save_output / (name + ".png")
             saveImg(img_pts, str(f))
+            print("save img: ", f)
+            if task == "Colon":
+                mask_tensor = mask_2D[0].detach()
+                mask = (
+                    mask_tensor.mul(255)
+                    .clamp(0, 255)
+                    .to(torch.uint8)
+                    .squeeze()
+                    .cpu()
+                    .numpy()
+                )
+                mask = np.ascontiguousarray(mask)
+                f = save_output / f"{name}_mask.png"
+                saveImg(mask, str(f))
+                print("save mask: ", f)
         count += 1
 
     print("output pseudo ground truth: ", count)

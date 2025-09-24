@@ -1,10 +1,10 @@
 data:
     dataset: 'Colon'
-    images_path: './datasets/endomapper/toy_33/'
+    images_path: './datasets/endomapper/33/'
     camera_mask_path: './datasets/endomapper/camera_mask.png'
-    use_specular_mask: true  # If false, treat all pixels as non-specular (specular mask = ones)
-    # use_specular_mask: false
-    export_folder: 'train' # train, val
+    # use_specular_mask: true  # If false, treat all pixels as non-specular (specular mask = ones)
+    use_specular_mask: true    
+    export_folder: 'val' # train, val
     preprocessing:
         downsize: 4 # 1, 2, 4, 8    # This is used instead of resize to only select dimensions divisible by 8
         # 1 = resize: [960, 1344]   # Original size of Endomapper images
@@ -21,9 +21,10 @@ data:
             enable: false   # Set to false for export
     homography_adaptation:
         enable: true
-        num: 2 # Make a swipe from 2 to 100 
+        num: 50  
         aggregation: 'sum' # Just use sum
         filter_counts: 0
+        valid_border_margin: 6
         homographies:
             params:
                 translation: true
@@ -35,6 +36,7 @@ data:
                 perspective_amplitude_y: 0.2
                 allow_artifacts: true
                 patch_ratio: 0.85
+                
 
 training:
     workers_test: 2 # Set to 0 for debugging, 2 for production
@@ -47,13 +49,14 @@ model:
     }    
     batch_size: 1
     eval_batch_size: 1
-    detection_threshold: 0.015 # Swipe from 0.02 to 0.0001
+    detection_threshold: 0.005 
     nms: 4 # 4
-    # top_k: 600
+    top_k: 600
     subpixel:
         enable: false   
 
-# pretrained: 'logs/magicpoint_synth20/checkpoints/superPointNet_200000_checkpoint.pth.tar' # 'SuperPointNet'
+# pretrained: 'logs/old/magicpoint_synth20/checkpoints/superPointNet_200000_checkpoint.pth.tar' # 'SuperPointNet'
 # pretrained: 'logs/magicpoint_synth_t2/checkpoints/superPointNet_100000_checkpoint.pth.tar'
-# pretrained: pretrained/superpoint_v1.pth 
-pretrained: "logs/old/superpoint_coco_heat2_0/checkpoints/superPointNet_170000_checkpoint.pth.tar"
+
+# pretrained: pretrained/superpoint_v1.pth # MagicLeap
+pretrained: "logs/old/superpoint_coco_heat2_0/checkpoints/superPointNet_170000_checkpoint.pth.tar" # SuperpointNet_gauss2

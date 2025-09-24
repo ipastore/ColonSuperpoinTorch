@@ -12,6 +12,7 @@ import numpy as np
 # import tensorflow as tf
 import torch
 from pathlib import Path
+from typing import Union
 import torch.utils.data as data
 
 # from .base_dataset import BaseDataset
@@ -189,42 +190,52 @@ class Colon(data.Dataset):
     def format_sample(self, sample):
         return sample
     
-    def _read_image(self, path: str ) -> np.ndarray:
-        """
-        Read an image from the given path, apply center crop and downsize.
-
-        :param path: Path to the image file. The image is expected to be in RGB format
-                    with values in the 0–255 range. Shape: (H, W, 3).
-        :type path: str
-        :return: Preprocessed image (or mask) standardized to EndoMapper format.
-                Output is scaled to the 0–1 range with dtype float32.Shape: (H, W).
-        :rtype: numpy.ndarray
-        """
-        input_image = cv2.imread(path)
-        input_image = cv2.cvtColor(input_image, cv2.COLOR_RGB2GRAY)
-
+    def _center_crop_and_resize(self, image: np.ndarray) -> np.ndarray:
+        """Center crop and downscale an image (or mask) to EndoMapper defaults."""
         target_height = 960
         target_width = 1344
 
-        offset_height = (input_image.shape[0] - target_height) // 2
-        offset_width = (input_image.shape[1] - target_width) // 2
+        offset_height = (image.shape[0] - target_height) // 2
+        offset_width = (image.shape[1] - target_width) // 2
 
-        # Apply center crop:
-        input_image = input_image[offset_height:offset_height + target_height, 
-                                    offset_width:offset_width + target_width]
+        cropped = image[offset_height:offset_height + target_height,
+                        offset_width:offset_width + target_width]
+        resized = cv2.resize(
+            cropped,
+            (target_width // self.downsize, target_height // self.downsize),
+            interpolation=cv2.INTER_AREA,
+        )
 
-        # Downsize the image
-        input_image = cv2.resize(
-            input_image, (target_width // self.downsize, target_height // self.downsize),
-            interpolation=cv2.INTER_AREA)
-    
-        # Normalize the image
-        input_image = input_image.astype('float32') / 255.0
+        return resized.astype(np.float32, copy=False)
+
+    def _read_image(self, source: Union[str, np.ndarray]) -> np.ndarray:
+        """Read an image or array, convert to grayscale, and normalize to [0, 1]."""
+        if isinstance(source, str):
+            input_image = cv2.imread(source)
+            if input_image is None:
+                raise FileNotFoundError(f"Unable to read image at {source}.")
+        else:
+            input_image = np.asarray(source)
+
+        if input_image.ndim == 3:
+            input_image = cv2.cvtColor(input_image, cv2.COLOR_RGB2GRAY)
+        elif input_image.ndim != 2:
+            raise ValueError(f"Unsupported image dimensions: {input_image.shape}.")
+
+        if np.issubdtype(input_image.dtype, np.integer):
+            input_image = input_image.astype(np.float32) / 255.0
+        else:
+            input_image = input_image.astype(np.float32, copy=False)
+            if input_image.max() > 1.0:
+                input_image /= 255.0
+            else:
+                np.clip(input_image, 0.0, 1.0, out=input_image)
+
         return input_image
     
 
 
-    def _compute_specular_mask(self, image: np.ndarray, threshold=0.86, kernel_size=5, iterations=10) -> np.ndarray:
+    def _compute_specular_mask(self, image: np.ndarray, threshold=0.75, kernel_size=5, iterations=10) -> np.ndarray:
         """Compute a specular mask from an image.
 
         This generates a binary mask where specularities are 0 (masked out) and
@@ -233,7 +244,7 @@ class Colon(data.Dataset):
 
         Args:
             image: Grayscale image of shape (H, W) with values in [0, 1].
-            threshold: Pixel threshold to distinguish specular vs. non-specular.
+            threshold: Pixel threshold to distinguish specular vs. non-specular. Change from 0.86 to 0.8, to 0.75
             kernel_size: Erosion kernel size for mask cleanup.
             iterations: Number of erosion iterations.
 
@@ -284,6 +295,9 @@ class Colon(data.Dataset):
             else:
                 camera_mask = self._read_image(camera_mask_path)
                 camera_mask = 1 - camera_mask
+                if camera_mask.shape != image.shape:
+                    # Throw error of different shapes
+                    raise ValueError(f"Camera mask shape {camera_mask.shape} does not match image shape {image.shape}.")
 
             if self.config.get('use_specular_mask', True):
                 specular_mask = self._compute_specular_mask(image)
@@ -362,11 +376,15 @@ class Colon(data.Dataset):
         input  = {}
         input.update(sample)
         # image
-        # img_o = _read_image(self.get_img_from_sample(sample))
-        img_o = self._read_image(sample['image'])
+        image_path = sample['image']
+        original_image = self._read_image(image_path)
+
+        extra_mask = _get_extra_mask(original_image)
+        # Crop and downsize image and mask to EndoMapper format
+        resized_mask = self._center_crop_and_resize(extra_mask)
+        img_o = self._center_crop_and_resize(original_image)
         H, W = img_o.shape[0], img_o.shape[1]
-        specular_mask = _get_extra_mask(img_o)
-        specular_mask = torch.tensor(specular_mask, dtype=torch.float32).view(-1, H, W)
+        specular_mask = torch.tensor(resized_mask, dtype=torch.float32).view(-1, H, W)
 
         # print(f"image: {image.shape}")
         img_aug = img_o.copy()
@@ -377,7 +395,6 @@ class Colon(data.Dataset):
         # img_aug = _preprocess(img_aug[:,:,np.newaxis])
         img_aug = torch.tensor(img_aug, dtype=torch.float32).view(-1, H, W)
 
-        # TODO spt here I would compute the combinated mask
         valid_mask = self.compute_valid_mask(torch.tensor([H, W]), inv_homography=torch.eye(3))
         input.update({'image': img_aug})
         input.update({'valid_mask': specular_mask})
@@ -407,9 +424,10 @@ class Colon(data.Dataset):
             #                                      erosion_radius=self.config['augmentation']['homographic'][
             #                                          'valid_border_margin'])
             valid_mask = self.compute_valid_mask_with_extra_mask(specular_mask, inv_homography=inv_homographies,
-                                                                 erosion_radius=self.config['augmentation']['homographic'][
+                                                                 erosion_radius=self.config['homography_adaptation'][
                                                                      'valid_border_margin'])
-
+            
+            
             input.update({'image': warped_img, 'valid_mask': valid_mask, 'image_2D':img_aug, 'image_2D_valid_mask': specular_mask})
             input.update({'homographies': homographies, 'inv_homographies': inv_homographies})
 
@@ -452,7 +470,7 @@ class Colon(data.Dataset):
                 warped_labels = warped_set['labels']
                 # if self.transform is not None:
                     # warped_img = self.transform(warped_img)
-                valid_mask = self.compute_valid_mask(torch.tensor([H, W]), inv_homography=inv_homography,
+                valid_mask = self.compute_valid_mask_with_extra_mask(specular_mask, inv_homography=inv_homography,
                             erosion_radius=self.config['augmentation']['homographic']['valid_border_margin'])
 
                 input.update({'image': warped_img, 'labels_2D': warped_labels, 'valid_mask': valid_mask})
@@ -501,7 +519,7 @@ class Colon(data.Dataset):
                 input.update({'warped_img': warped_img, 'warped_labels': warped_labels, 'warped_res': warped_res})
 
                 # print('erosion_radius', self.config['warped_pair']['valid_border_margin'])
-                valid_mask = self.compute_valid_mask(torch.tensor([H, W]), inv_homography=inv_homography,
+                valid_mask = self.compute_valid_mask_with_extra_mask(specular_mask, inv_homography=inv_homography,
                             erosion_radius=self.config['warped_pair']['valid_border_margin'])  # can set to other value
                 input.update({'warped_valid_mask': valid_mask})
                 input.update({'homographies': homography, 'inv_homographies': inv_homography})

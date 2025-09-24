@@ -4,7 +4,7 @@ data:
     images_path: './datasets/endomapper/33/'  
     camera_mask_path: './datasets/endomapper/camera_mask.png'  
     use_specular_mask: true  
-    labels: logs/export/33/ds4_non_mask_th000075_nhom10_nms4/predictions
+    labels: logs/export/33/ds4_specular_camera_mask_th005_k50_vbm6_nms4_topk600/predictions
 
     gaussian_label:
         enable: true  
@@ -32,8 +32,7 @@ data:
                     kernel_size_range: [100, 150]
                 motion_blur: {max_kernel_size: 3}
         homographic:
-            enable: false  # not implemented in export path
-
+            enable: false  #not implemented
     # For standard training; not used by export
     warped_pair:
         enable: true
@@ -48,7 +47,7 @@ data:
             patch_ratio: 0.85
             max_angle: 1.57
             allow_artifacts: true
-        valid_border_margin: 3
+        valid_border_margin: 6
 
 front_end_model: 'Train_model_heatmap'  # 'Train_model_frontend'
 
@@ -58,8 +57,8 @@ training:
 
 model:
     # name: 'magic_point'
-    name: 'SuperPointNet_pretrained'
-    # name: 'SuperPointNet_gauss2'
+    # name: 'SuperPointNet_pretrained'
+    name: 'SuperPointNet_gauss2'
     # name: 'SuperPointNet'
     params: {}
     detector_loss:
@@ -67,8 +66,8 @@ model:
 
     batch_size: 16 # 32 
     eval_batch_size: 16 # 32 
-    learning_rate: 0.00001 # 0.0001
-    detection_threshold: 0.015 # 0.015
+    learning_rate: 0.0001 # 0.0001
+    detection_threshold: 0.005 # 0.015
     lambda_loss: 1 # 1 
     nms: 4
     dense_loss:
@@ -101,6 +100,6 @@ save_interval: 5000 # 2000
 validation_size: 20
 
 # Pretrained weights
-pretrained: pretrained/superpoint_v1.pth # For original SuperPoint (SuperPointNet_pretrained)
-# pretrained: 'logs/old/superpoint_coco_heat2_0/checkpoints/superPointNet_170000_checkpoint.pth.tar' # SuperPointNet_gauss2
+# pretrained: pretrained/superpoint_v1.pth # For original SuperPoint (SuperPointNet_pretrained)
+pretrained: 'logs/old/superpoint_coco_heat2_0/checkpoints/superPointNet_170000_checkpoint.pth.tar' # SuperPointNet_gauss2
 # pretrained: 'logs/old/magicpoint_synth20/checkpoints/superPointNet_200000_checkpoint.pth.tar' # For SuperPointNet
