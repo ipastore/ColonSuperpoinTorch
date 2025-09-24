@@ -175,7 +175,7 @@ class Train_model_frontend(object):
         print("adam optimizer")
         import torch.optim as optim
 
-        optimizer = optim.Adam(net.parameters(), lr=lr, betas=(0.9, 0.999))
+        optimizer = optim.Adam(net.parameters(), lr=lr, betas=(0.9, 0.999), amsgrad=True)  # ADDED AMSGRAD=True to debug jump of loss when training
         return optimizer
 
     def loadModel(self):
