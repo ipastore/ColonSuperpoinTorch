@@ -1,6 +1,6 @@
 data:
     dataset: 'Colon'
-    images_path: './datasets/endomapper/33/'
+    images_path: './datasets/endomapper/toy_33/'
     camera_mask_path: './datasets/endomapper/camera_mask.png'
     # apply_specular_mask_to_source_image: true  # If false, treat all pixels as non-specular (specular mask = ones)
     apply_specular_mask_to_source_image: true
@@ -59,4 +59,4 @@ model:
 # pretrained: 'logs/magicpoint_synth_t2/checkpoints/superPointNet_100000_checkpoint.pth.tar'
 
 # pretrained: pretrained/superpoint_v1.pth # MagicLeap
-pretrained: "logs/old/superpoint_coco_heat2_0/checkpoints/superPointNet_170000_checkpoint.pth.tar" # SuperpointNet_gauss2
+pretrained: "logs/old/superpoint_coco_heat2_0/checkpoints/superPointNet_gauss2_170000_checkpoint.pth.tar" # SuperpointNet_gauss2

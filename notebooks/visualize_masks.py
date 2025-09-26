@@ -20,7 +20,7 @@ def visualize_mask_for_image(config, image_path, camera_mask_path, output_path=N
     else:
         camera_np = colon._read_image(camera_mask_path)
         camera_np = 1 - camera_np
-    if config.get('use_specular_mask', True):
+    if config.get('apply_specular_mask_to_source_image', True):
         specular_np = colon._compute_specular_mask(img_np)
     else:
         specular_np = np.ones_like(img_np)
@@ -73,7 +73,7 @@ if __name__ == "__main__":
         'dataset': 'Colon',
         'export_folder': 'train',
         'camera_mask_path': CAMERA_MASK_PATH,
-        'use_specular_mask': USE_SPECULAR_MASK,
+        'apply_specular_mask_to_source_image': USE_SPECULAR_MASK,
         'images_path': '/home/student/ColonSuperpoinTorch/datasets/endomapper/toy_33/',
         'preprocessing': {
             'downsize': 1,

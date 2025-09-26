@@ -1,13 +1,3 @@
-"""
-Colon dataset utilities.
-
-Changelog:
-- 2025-09-15: Add `use_specular_mask` config option to optionally disable
-  specular mask usage when building extra masks. When set to False, the
-  specular mask defaults to all ones (treat all pixels as non-specular), and
-  only the camera mask (if provided) is applied.
-"""
-
 import numpy as np
 # import tensorflow as tf
 import torch
@@ -31,7 +21,10 @@ class Colon(data.Dataset):
         # If False, disable specular mask usage and treat all pixels as
         # non-specular (i.e., specular mask = all ones). Camera mask is still
         # applied if provided. See __getitem__ -> _get_extra_mask.
-        'use_specular_mask': True,
+        'apply_specular_mask_to_source_image': True,
+        # Control whether warped images inherit the specular mask or rely only
+        # on geometric validity from the homography.
+        'apply_specular_mask_to_warped_images': True,
         'camera_mask_path': None,
         'images_path': None,
         'preprocessing': {
@@ -192,17 +185,33 @@ class Colon(data.Dataset):
     
     def _center_crop_and_resize(self, image: np.ndarray) -> np.ndarray:
         """Center crop and downscale an image (or mask) to EndoMapper defaults."""
-        target_height = 960
-        target_width = 1344
+        
+        # Check greyscale
+        if image.ndim != 2:
+            raise ValueError(f"Expected 2D grayscale image, got shape {image.shape}.")
 
-        offset_height = (image.shape[0] - target_height) // 2
-        offset_width = (image.shape[1] - target_width) // 2
+        # Check image size and determine crop parameters
+        accepted_shapes = [(960, 1344), (1012, 1350)]       # height, width
 
-        cropped = image[offset_height:offset_height + target_height,
-                        offset_width:offset_width + target_width]
+        if image.shape not in accepted_shapes:
+            raise ValueError(f"Unexpected image shape {image.shape}. Accepted shapes: {accepted_shapes}.")
+
+        target_shape = (960, 1344)                          #height, width
+
+        # For images of set33 (LightDepth) we only need a center crop
+        if image.shape[0] == 1012 and image.shape[1] == 1350:
+
+
+            offset_height = (image.shape[0] - target_shape[0]) // 2
+            offset_width = (image.shape[1] - target_shape[1]) // 2
+
+            image = image[offset_height:offset_height + target_shape[0],
+                            offset_width:offset_width + target_shape[1]]
+
+        # Resize to target size with downsampling
         resized = cv2.resize(
-            cropped,
-            (target_width // self.downsize, target_height // self.downsize),
+            image,
+            (target_shape[1] // self.downsize, target_shape[0] // self.downsize),
             interpolation=cv2.INTER_AREA,
         )
 
@@ -275,7 +284,8 @@ class Colon(data.Dataset):
             """Build the extra mask combining camera and specular masks.
 
             The resulting mask is the element-wise product of the camera mask
-            and the specular mask. If ``use_specular_mask`` is False, the
+            and the specular mask. If ``apply_specular_mask_to_source_image`` is
+            False, the
             specular mask defaults to all ones (treat all pixels as
             non-specular), so only the camera mask is applied.
 
@@ -299,7 +309,7 @@ class Colon(data.Dataset):
                     # Throw error of different shapes
                     raise ValueError(f"Camera mask shape {camera_mask.shape} does not match image shape {image.shape}.")
 
-            if self.config.get('use_specular_mask', True):
+            if self.config.get('apply_specular_mask_to_source_image', True):
                 specular_mask = self._compute_specular_mask(image)
             else:
                 # Treat all pixels as non-specular: specular_mask = all ones
@@ -379,6 +389,10 @@ class Colon(data.Dataset):
         image_path = sample['image']
         original_image = self._read_image(image_path)
 
+        # Get extra mask: camera * specular. If no camera mask is provided,
+        # only the specular mask is used. If `apply_specular_mask_to_source_image`
+        # is False, the specular mask defaults to all ones (treat all pixels as
+        # non-specular), so only the camera mask is applied.
         extra_mask = _get_extra_mask(original_image)
         # Crop and downsize image and mask to EndoMapper format
         resized_mask = self._center_crop_and_resize(extra_mask)
@@ -419,15 +433,20 @@ class Colon(data.Dataset):
             warped_img = self.inv_warp_image_batch(img_aug.squeeze().repeat(homoAdapt_iter,1,1,1), inv_homographies, mode='bilinear').unsqueeze(0)
             warped_img = warped_img.squeeze()
             # masks
-            #TODO spt I think I should also use the cmbinated mask
-            # valid_mask = self.compute_valid_mask_with_extra_mask(torch.tensor([H, W]), inv_homography=inv_homographies,
-            #                                      erosion_radius=self.config['augmentation']['homographic'][
-            #                                          'valid_border_margin'])
-            valid_mask = self.compute_valid_mask_with_extra_mask(specular_mask, inv_homography=inv_homographies,
-                                                                 erosion_radius=self.config['homography_adaptation'][
-                                                                     'valid_border_margin'])
-            
-            
+            if self.config.get('apply_specular_mask_to_warped_images', True):
+                valid_mask = self.compute_valid_mask_with_extra_mask(
+                    specular_mask,
+                    inv_homography=inv_homographies,
+                    erosion_radius=self.config['homography_adaptation']['valid_border_margin'],
+                )
+            else:
+                valid_mask = self.compute_valid_mask(
+                    torch.tensor([H, W]),
+                    inv_homography=inv_homographies,
+                    erosion_radius=self.config['homography_adaptation']['valid_border_margin'],
+                )
+
+
             input.update({'image': warped_img, 'valid_mask': valid_mask, 'image_2D':img_aug, 'image_2D_valid_mask': specular_mask})
             input.update({'homographies': homographies, 'inv_homographies': inv_homographies})
 
@@ -444,7 +463,8 @@ class Colon(data.Dataset):
             ## residual
             labels_res = torch.zeros((2, H, W)).type(torch.FloatTensor)
             input.update({'labels_res': labels_res})
-
+            
+            # This case is not implemented, in the yaml file should be always False
             if (self.enable_homo_train == True and self.action == 'train') or (self.enable_homo_val and self.action == 'val'):
                 homography = self.sample_homography(np.array([2, 2]), shift=-1,
                                                     **self.config['augmentation']['homographic']['params'])
@@ -470,8 +490,14 @@ class Colon(data.Dataset):
                 warped_labels = warped_set['labels']
                 # if self.transform is not None:
                     # warped_img = self.transform(warped_img)
-                valid_mask = self.compute_valid_mask_with_extra_mask(specular_mask, inv_homography=inv_homography,
-                            erosion_radius=self.config['augmentation']['homographic']['valid_border_margin'])
+
+                # If statement to avoid mask when training
+                if self.config.get('apply_specular_mask_to_warped_images', True):
+                    valid_mask = self.compute_valid_mask_with_extra_mask(specular_mask, inv_homography=inv_homography,
+                                erosion_radius=self.config['augmentation']['homographic']['valid_border_margin'])
+                else:
+                    valid_mask = self.compute_valid_mask(torch.tensor([H, W]), inv_homography=inv_homography,
+                                erosion_radius=self.config['augmentation']['homographic']['valid_border_margin'])
 
                 input.update({'image': warped_img, 'labels_2D': warped_labels, 'valid_mask': valid_mask})
 
@@ -517,10 +543,16 @@ class Colon(data.Dataset):
                     input.update({'warped_labels_bi': warped_labels_bi})
 
                 input.update({'warped_img': warped_img, 'warped_labels': warped_labels, 'warped_res': warped_res})
-
                 # print('erosion_radius', self.config['warped_pair']['valid_border_margin'])
-                valid_mask = self.compute_valid_mask_with_extra_mask(specular_mask, inv_homography=inv_homography,
-                            erosion_radius=self.config['warped_pair']['valid_border_margin'])  # can set to other value
+
+                # If statement to avoid mask when training
+                if self.config.get('apply_specular_mask_to_warped_images', True):
+                    valid_mask = self.compute_valid_mask_with_extra_mask(specular_mask, inv_homography=inv_homography,
+                                                                        erosion_radius=self.config['warped_pair']['valid_border_margin'])  
+                else:
+                    valid_mask = self.compute_valid_mask(torch.tensor([H, W]), inv_homography=inv_homography,
+                                                         erosion_radius=self.config['warped_pair']['valid_border_margin'])
+                    
                 input.update({'warped_valid_mask': valid_mask})
                 input.update({'homographies': homography, 'inv_homographies': inv_homography})
 

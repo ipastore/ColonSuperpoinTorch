@@ -1,11 +1,11 @@
 data:
     dataset: 'Colon' 
 
-    images_path: './datasets/endomapper/33/'  
+    images_path: './datasets/endomapper/toy_33/'  
     camera_mask_path: './datasets/endomapper/camera_mask.png'                   #If none, no camera mask is applied
     apply_specular_mask_to_source_image: true                                   #If false, skip specular mask when building the source image mask
     apply_specular_mask_to_warped_images: false                                 #If false, warped images rely only on geometric validity
-    labels: logs/export/33/C_ds4_specular_camera_mask_th005_k50_vbm6_nms4_topk600/predictions
+    labels: logs/export/toy_33/SuperpointNet_gauss2/camera_specular_mask/ds4_specular_camera_mask_th005_k50_topk600_toy/predictions
 
     gaussian_label:
         enable: true  
@@ -94,11 +94,11 @@ model:
 
 retrain: true
 reset_iter: true
-train_iter: 60000 #200000 # 170000
-validation_interval: 2000 # 2000
-tensorboard_interval: 500 # 200
-save_interval: 5000 # 2000
-validation_size: 20
+train_iter: 10 #200000 # 170000
+validation_interval: 5 # 2000
+tensorboard_interval: 1 # 200
+save_interval: 5 # 2000
+validation_size: 1
 
 # Pretrained weights
 # pretrained: pretrained/superpoint_v1.pth # For original SuperPoint (SuperPointNet_pretrained)

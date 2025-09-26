@@ -184,7 +184,7 @@ homographies:
 **Processing Settings:**
 - `workers_test: 2` - Good balance for I/O and processing
 - `batch_size: 1` - Stable for export pipeline
-- `use_specular_mask: true` - Important for colon imagery quality
+- `apply_specular_mask_to_source_image: true` - Important for colon imagery quality
 
 **Disabled Features:**
 - `gaussian_label.enable: false` - Not needed for export
