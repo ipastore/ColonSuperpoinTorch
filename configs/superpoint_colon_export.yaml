@@ -4,6 +4,8 @@ data:
     camera_mask_path: './datasets/endomapper/camera_mask.png'
     # apply_specular_mask_to_source_image: true  # If false, treat all pixels as non-specular (specular mask = ones)
     apply_specular_mask_to_source_image: true
+    erode_camera_mask: 0
+    erode_specular_mask: 0
     export_folder: 'val' # train, val
     preprocessing:
         downsize: 4 # 1, 2, 4, 8    # This is used instead of resize to only select dimensions divisible by 8

@@ -44,7 +44,7 @@ def example(x: int) -> str:
 
 ## 4) Branching, rebasing, PRs
 
-* Work on a **feature branch** for every feature request or bug fix; **do not** push directly to `main`.
+* Always create a **feature branch** before making any code or documentation changes. The only exception is clarification-only responses that do not touch the filesystem. Never push directly to `main`.
 * Before creating the branch, ensure the worktree is clean. If there are local modifications on `master`, run `git stash push --include-untracked -m "<reason>"` to shelve them, then create the branch from the clean state. Leave the stash untouched while you work so you can decide later—when you return to `master`—whether to reapply it with `git stash pop` or discard it with `git stash drop`.
 * **Rebase** your branch onto the latest `main` before merging:
 
@@ -73,6 +73,13 @@ After merging, **delete the feature branch**.
 
    * Confirm `conda activate py38-sp` has been run so commands use the correct environment.
    * Run `git status --short` on `master`; if it is not clean, stash the local edits with `git stash push --include-untracked -m "<reason>"` and keep the stash for later review when you return to `master`.
+   * When the task involves editing files, create a new branch after confirming the clean state:
+
+     ```bash
+     git checkout -b <descriptive-branch-name>
+     ```
+
+     Stay on this branch for the remainder of the task.
 
 3. **Implement**
 

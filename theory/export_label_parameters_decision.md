@@ -185,6 +185,7 @@ homographies:
 - `workers_test: 2` - Good balance for I/O and processing
 - `batch_size: 1` - Stable for export pipeline
 - `apply_specular_mask_to_source_image: true` - Important for colon imagery quality
+- `erode_camera_mask / erode_specular_mask`: tune vignetting vs. highlight erosion independently
 
 **Disabled Features:**
 - `gaussian_label.enable: false` - Not needed for export

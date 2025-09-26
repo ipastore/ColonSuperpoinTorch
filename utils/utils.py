@@ -703,7 +703,13 @@ def compute_valid_mask(image_shape, inv_homography, device='cpu', erosion_radius
 
     return torch.tensor(mask).to(device)
 
-def compute_valid_mask_with_extra_mask(extra_mask: torch.Tensor, inv_homography: torch.Tensor, device='cpu', erosion_radius=0) -> torch.Tensor:
+def compute_valid_mask_with_extra_mask(
+    extra_mask: torch.Tensor,
+    inv_homography: torch.Tensor,
+    device: str = 'cpu',
+    erosion_radius: int = 0,
+    extra_mask_erosion_radius: int = 0,
+) -> torch.Tensor:
     """
     Computes a binary mask transformed by the inverse homography.
 
@@ -713,8 +719,10 @@ def compute_valid_mask_with_extra_mask(extra_mask: torch.Tensor, inv_homography:
     :type inv_homography: torch.Tensor
     :device: The device to perform the computation on (default: 'cpu').
     :type device: str
-    :erosion_radius: The radius for erosion to remove artifacts (default: 0).
+    :erosion_radius: The radius applied to the geometric valid mask (default: 0).
     :type erosion_radius: int
+    :extra_mask_erosion_radius: Radius applied to the warped extra mask (default: 0).
+    :type extra_mask_erosion_radius: int
     :return: A binary mask of shape (B, H, W) after applying the inverse homography and erosion. dtype=torch.float32
     :rtype: torch.Tensor
     """
@@ -722,15 +730,21 @@ def compute_valid_mask_with_extra_mask(extra_mask: torch.Tensor, inv_homography:
         inv_homography = inv_homography.view(-1, 3, 3)
     batch_size = inv_homography.shape[0]
     # mask = torch.ones(batch_size, 1, image_shape[0], image_shape[1]).to(device)
-    mask = extra_mask.repeat(batch_size, 1, 1, 1).to(device)
-    mask = inv_warp_image_batch(mask, inv_homography, device=device, mode='nearest')
-    mask = mask.view(batch_size, extra_mask.shape[1], extra_mask.shape[2])
-    mask = mask.cpu().numpy()
-    if erosion_radius > 0:
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (erosion_radius*2,)*2)
+    warped_extra = extra_mask.repeat(batch_size, 1, 1, 1).to(device)
+    warped_extra = inv_warp_image_batch(warped_extra, inv_homography, device=device, mode='nearest')
+    warped_extra = warped_extra.view(batch_size, extra_mask.shape[1], extra_mask.shape[2])
+    warped_extra_np = warped_extra.cpu().numpy()
+    if extra_mask_erosion_radius > 0:
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (extra_mask_erosion_radius * 2,) * 2)
         for i in range(batch_size):
-            mask[i, :, :] = cv2.erode(mask[i, :, :], kernel, iterations=1)
-    return torch.tensor(mask).to(device)
+            warped_extra_np[i, :, :] = cv2.erode(warped_extra_np[i, :, :], kernel, iterations=1)
+    warped_extra = torch.tensor(warped_extra_np, dtype=extra_mask.dtype).to(device)
+
+    height, width = extra_mask.shape[1], extra_mask.shape[2]
+    image_shape = torch.tensor([height, width])
+    valid_mask = compute_valid_mask(image_shape, inv_homography, device=device, erosion_radius=erosion_radius)
+
+    return warped_extra * valid_mask
 
 
 

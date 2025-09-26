@@ -26,6 +26,8 @@ class Colon(data.Dataset):
         # on geometric validity from the homography.
         'apply_specular_mask_to_warped_images': True,
         'camera_mask_path': None,
+        'erode_camera_mask': 0,
+        'erode_specular_mask': 0,
         'images_path': None,
         'preprocessing': {
             'downsize': 1,
@@ -308,9 +310,17 @@ class Colon(data.Dataset):
                 if camera_mask.shape != image.shape:
                     # Throw error of different shapes
                     raise ValueError(f"Camera mask shape {camera_mask.shape} does not match image shape {image.shape}.")
+                camera_margin = int(self.config.get('erode_camera_mask', 0))
+                if camera_margin > 0:
+                    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (camera_margin * 2, camera_margin * 2))
+                    camera_mask = cv2.erode(camera_mask, kernel, iterations=1)
 
             if self.config.get('apply_specular_mask_to_source_image', True):
                 specular_mask = self._compute_specular_mask(image)
+                specular_margin = int(self.config.get('erode_specular_mask', 0))
+                if specular_margin > 0:
+                    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (specular_margin * 2, specular_margin * 2))
+                    specular_mask = cv2.erode(specular_mask, kernel, iterations=1)
             else:
                 # Treat all pixels as non-specular: specular_mask = all ones
                 specular_mask = np.ones_like(image, dtype=np.float32)

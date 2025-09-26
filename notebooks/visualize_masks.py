@@ -74,6 +74,8 @@ if __name__ == "__main__":
         'export_folder': 'train',
         'camera_mask_path': CAMERA_MASK_PATH,
         'apply_specular_mask_to_source_image': USE_SPECULAR_MASK,
+        'erode_camera_mask': 0,
+        'erode_specular_mask': 0,
         'images_path': '/home/student/ColonSuperpoinTorch/datasets/endomapper/toy_33/',
         'preprocessing': {
             'downsize': 1,
