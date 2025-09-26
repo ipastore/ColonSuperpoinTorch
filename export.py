@@ -34,6 +34,7 @@ from utils.utils import (
     save_checkpoint,
     load_checkpoint,
     save_path_formatter,
+    get_torch_device,
 )
 from utils.utils import getWriterPath
 from utils.loader import dataLoader, modelLoader, pretrainedLoader
@@ -85,7 +86,7 @@ def export_descriptor(config, output_dir, args):
     from utils.var_dim import squeezeToNumpy
 
     # basic settings
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = get_torch_device()
     logging.info("train on device: %s", device)
     with open(os.path.join(output_dir, "config.yml"), "w") as f:
         yaml.dump(config, f, default_flow_style=False)
@@ -207,7 +208,7 @@ def export_detector_homoAdapt_gpu(config, output_dir, args):
     # basic setting
     task = config["data"]["dataset"]
     export_task = config["data"]["export_folder"]
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = get_torch_device()
 
     logging.info("train on device: %s", device)
     with open(os.path.join(output_dir, "config.yml"), "w") as f:

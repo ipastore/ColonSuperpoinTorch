@@ -24,6 +24,7 @@ from utils.utils import labels2Dto3D, flattenDetection, labels2Dto3D_flattened
 from utils.utils import pltImshow, saveImg
 from utils.utils import precisionRecall_torch
 from utils.utils import save_checkpoint
+from utils.utils import get_torch_device
 
 from pathlib import Path
 from models.model_wrap import SuperPointFrontend_torch
@@ -160,7 +161,7 @@ if __name__ == '__main__':
     # filename = 'configs/magicpoint_shapes_subpix.yaml'
     filename = 'configs/magicpoint_repeatability_heatmap.yaml'
     import yaml
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = get_torch_device()
 
     torch.set_default_tensor_type(torch.FloatTensor)
     with open(filename, 'r') as f:
@@ -200,7 +201,6 @@ if __name__ == '__main__':
         print("desc_sparse[0]: ", desc_sparse[0].shape)
 
 # pts, desc, _, heatmap
-
 
 
 

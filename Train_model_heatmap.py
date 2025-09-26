@@ -20,7 +20,7 @@ from utils.tools import dict_update
 
 # from utils.utils import labels2Dto3D, flattenDetection, labels2Dto3D_flattened
 # from utils.utils import pltImshow, saveImg
-from utils.utils import precisionRecall_torch
+from utils.utils import precisionRecall_torch, get_torch_device
 # from utils.utils import save_checkpoint
 
 from pathlib import Path
@@ -690,7 +690,7 @@ if __name__ == "__main__":
     filename = "configs/superpoint_coco_train_heatmap.yaml"
     import yaml
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = get_torch_device()
 
     torch.set_default_tensor_type(torch.FloatTensor)
     with open(filename, "r") as f:

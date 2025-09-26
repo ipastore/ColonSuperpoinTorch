@@ -26,6 +26,7 @@ os.chdir(project_root)
 from utils.loader import dataLoader_test as dataLoader
 from utils.loader import get_module
 from export import export_detector_homoAdapt_gpu
+from utils.utils import get_torch_device
 
 
 class ThresholdKSweepExperiment:
@@ -70,7 +71,7 @@ class ThresholdKSweepExperiment:
         self._load_existing_results()
         
         # Device setup
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = get_torch_device()
         
         logging.info(f"Dataset: {self.dataset_name}")
         logging.info(f"Output directory: {self.base_output_dir}")

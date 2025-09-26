@@ -35,7 +35,7 @@ This repo is a bi-product of our paper [deepFEPE(IROS 2020)](https://github.com/
 conda create -n py38-sp python=3.8 -y
 conda activate py38-sp
 conda install pytorch==1.10.2 torchvision==0.11.3 cudatoolkit=11.3 -c pytorch -y
-pip install -r requirements_py38.txt   
+pip install -r requirements_py38.txt
 
 ```
 ### Verify installation
@@ -52,6 +52,8 @@ PY
 ```
 
 Output should be: 1.3.1 and True.
+
+For macOS (Apple Silicon) environments, follow the [macOS setup guide](MACOS_M1_INSTALLATION.md) and use `requirements_py38_MACOS.txt` during the pip installation step.
 
 ### Path setting
 - paths for datasets ($DATA_DIR), logs are set in `setting.py`

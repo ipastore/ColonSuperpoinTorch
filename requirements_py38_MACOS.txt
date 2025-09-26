@@ -1,0 +1,13 @@
+# Additional Python packages to install with pip after setting up the conda environment.
+# These complement the conda-installed stack documented in MACOS_M1_INSTALLATION.md.
+argparse
+imageio
+imgaug
+jupyter
+pyyaml
+scikit-learn
+tensorboardX
+torchgeometry
+torchsummary
+tqdm
+coloredlogs

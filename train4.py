@@ -17,7 +17,7 @@ import torch.utils.data
 from tensorboardX import SummaryWriter
 
 # from utils.utils import tensor2array, save_checkpoint, load_checkpoint, save_path_formatter
-from utils.utils import getWriterPath
+from utils.utils import getWriterPath, get_torch_device
 from settings import EXPER_PATH
 
 ## loaders: data, model, pretrained model
@@ -53,7 +53,7 @@ def train_joint(config, output_dir, args):
     torch.set_default_tensor_type(torch.FloatTensor)
     task = config['data']['dataset']
     
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = get_torch_device()
     logging.info('train on device: %s', device)
     with open(os.path.join(output_dir, 'config.yml'), 'w') as f:
         yaml.dump(config, f, default_flow_style=False)
@@ -139,5 +139,4 @@ if __name__ == '__main__':
     # with capture_outputs(os.path.join(output_dir, 'log')):
     logging.info('Running command {}'.format(args.command.upper()))
     args.func(config, output_dir, args)
-
 

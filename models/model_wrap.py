@@ -3,6 +3,8 @@
 # PointTracker is from Daniel's repo.
 """
 
+from collections.abc import Mapping
+
 import numpy as np
 import torch
 from torch.autograd import Variable
@@ -301,6 +303,29 @@ class SuperPointFrontend_torch(object):
         return desc
 
 
+    def _unpack_net_output(self, outputs):
+        """Return detector and descriptor tensors regardless of output type."""
+        if isinstance(outputs, Mapping):
+            if 'semi' in outputs and 'desc' in outputs:
+                return outputs['semi'], outputs['desc']
+            missing = {key for key in ('semi', 'desc') if key not in outputs}
+            raise KeyError(f"Network output missing keys: {sorted(missing)}")
+
+        if isinstance(outputs, (tuple, list)):
+            if len(outputs) >= 2:
+                return outputs[0], outputs[1]
+            raise ValueError(
+                f"Network output of type {type(outputs).__name__} must contain at least two elements"
+            )
+
+        if hasattr(outputs, 'semi') and hasattr(outputs, 'desc'):
+            return getattr(outputs, 'semi'), getattr(outputs, 'desc')
+
+        raise TypeError(
+            f"Unsupported network output type {type(outputs).__name__}; expected Mapping, tuple/list, or object with 'semi' and 'desc' attributes."
+        )
+
+
     def subpixel_predict(self, pred_res, points, verbose=False):
         """
         input:
@@ -344,17 +369,13 @@ class SuperPointFrontend_torch(object):
             # outs = self.net.forward(inp, subpixel=self.subpixel)
             outs = self.net.forward(inp)
             # semi, coarse_desc = outs[0], outs[1]
-            semi, coarse_desc = outs['semi'], outs['desc']
+            semi, coarse_desc = self._unpack_net_output(outs)
         else:
             # Forward pass of network.
             with torch.no_grad():
                 # outs = self.net.forward(inp, subpixel=self.subpixel)
                 outs = self.net.forward(inp)
-                ##TODO: spt HARDCODED solution for different output format, should fix with a more elegant solution ##
-                if isinstance(outs, tuple):
-                    semi, coarse_desc = outs[0], outs[1]
-                else:
-                    semi, coarse_desc = outs['semi'], outs['desc']
+                semi, coarse_desc = self._unpack_net_output(outs)
 
         # as tensor
         from utils.utils import labels2Dto3D, flattenDetection
@@ -637,5 +658,3 @@ class PointTracker(object):
                 if i == N - 2:
                     clr2 = (255, 0, 0)
                     cv2.circle(out, p2, stroke, clr2, -1, lineType=16)
-
-

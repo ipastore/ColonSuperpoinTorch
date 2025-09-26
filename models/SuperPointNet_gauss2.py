@@ -8,6 +8,8 @@ from torch.nn.init import xavier_uniform_, zeros_
 from models.unet_parts import *
 import numpy as np
 
+from utils.utils import get_torch_device
+
 # from models.SubpixelNet import SubpixelNet
 class SuperPointNet_gauss2(torch.nn.Module):
     """ Pytorch definition of SuperPoint Network. """
@@ -134,7 +136,7 @@ def get_matches(deses_SP):
     # print("pts_idx_res: ", pts_idx_res.shape)
 
 def main():
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = get_torch_device()
     model = SuperPointNet_gauss2()
     model = model.to(device)
 
@@ -199,6 +201,5 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 
 

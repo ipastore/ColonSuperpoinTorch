@@ -5,6 +5,7 @@
 # loss --> delete if useless
 """
 
+import os
 import numpy as np
 import torch
 from pathlib import Path
@@ -13,6 +14,16 @@ import datetime
 from collections import OrderedDict
 import torch.nn.functional as F
 import torch.nn as nn
+
+
+def get_torch_device() -> torch.device:
+    """Return the best available `torch.device` in CUDA → MPS → CPU order."""
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+        return torch.device("mps")
+    return torch.device("cpu")
 ###### check
 # from utils.nms_pytorch import box_nms as box_nms_retinaNet
 from utils.d2s import DepthToSpace, SpaceToDepth
@@ -346,6 +357,12 @@ def inv_warp_image_batch(img, mat_homo_inv, device='cpu', mode='bilinear'):
     src_pixel_coords = warp_points(coor_cells.view([-1, 2]), mat_homo_inv, device)
     src_pixel_coords = src_pixel_coords.view([Batch, H, W, 2])
     src_pixel_coords = src_pixel_coords.float()
+
+    if img.device.type == "mps":
+        img_cpu = img.to("cpu")
+        grid_cpu = src_pixel_coords.to("cpu")
+        warped_cpu = F.grid_sample(img_cpu, grid_cpu, mode=mode, align_corners=True)
+        return warped_cpu.to(img.device)
 
     warped_img = F.grid_sample(img, src_pixel_coords, mode=mode, align_corners=True)
     return warped_img

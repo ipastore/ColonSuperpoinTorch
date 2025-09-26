@@ -16,7 +16,13 @@ from tqdm import tqdm
 
 from tensorboardX import SummaryWriter
 
-from utils.utils import tensor2array, save_checkpoint, load_checkpoint, save_path_formatter
+from utils.utils import (
+    tensor2array,
+    save_checkpoint,
+    load_checkpoint,
+    save_path_formatter,
+    get_torch_device,
+)
 from settings import EXPER_PATH
 from utils.loader import dataLoader, modelLoader, pretrainedLoader
 from utils.utils import getWriterPath
@@ -35,7 +41,7 @@ def export_descriptor(config, output_dir, args):
     '''
     # config
     # device = torch.device("cpu")
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = get_torch_device()
 
     logging.info('train on device: %s', device)
     with open(os.path.join(output_dir, 'config.yml'), 'w') as f:
