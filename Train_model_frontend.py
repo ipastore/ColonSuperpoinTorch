@@ -64,7 +64,7 @@ class Train_model_frontend(object):
         "train_iter": 170000,
         "save_interval": 2000,
         "tensorboard_interval": 200,
-        "model": {"subpixel": {"enable": False}},
+        "model": {"subpixel": {"enable": False}, "amsgrad": False},
     }
 
     def __init__(self, config, save_path=Path("."), device="cpu", verbose=False):
@@ -173,10 +173,13 @@ class Train_model_frontend(object):
         :param lr: learning rate
         :return:
         """
-        print("adam optimizer")
+        amsgrad = self.config["model"].get("amsgrad", True)
+        print(f"adam optimizer (amsgrad={amsgrad})")
         import torch.optim as optim
 
-        optimizer = optim.Adam(net.parameters(), lr=lr, betas=(0.9, 0.999), amsgrad=True)  # ADDED AMSGRAD=True to debug jump of loss when training
+        optimizer = optim.Adam(
+            net.parameters(), lr=lr, betas=(0.9, 0.999), amsgrad=amsgrad
+        )
         return optimizer
 
     def loadModel(self):
