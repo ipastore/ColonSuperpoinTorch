@@ -28,6 +28,7 @@ class Colon(data.Dataset):
         'camera_mask_path': None,
         'erode_camera_mask': 0,
         'erode_specular_mask': 0,
+        'specular_white_threshold': 0.75,
         'images_path': None,
         'preprocessing': {
             'downsize': 1,
@@ -263,9 +264,11 @@ class Colon(data.Dataset):
             A float32 mask array of shape (H, W) with values in {0.0, 1.0}.
         """
 
+        threshold_value = float(self.config.get('specular_white_threshold', threshold))
+
         # Specularities = 0; # Non-specularities = 1
         specular_mask = np.zeros_like(image, dtype=np.float32)
-        specular_mask[image < threshold] = 1.0
+        specular_mask[image < threshold_value] = 1.0
 
         # Erode
         # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))

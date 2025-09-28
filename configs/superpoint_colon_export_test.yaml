@@ -4,8 +4,9 @@ data:
     camera_mask_path: './datasets/endomapper/camera_mask.png'
     # apply_specular_mask_to_source_image: true  # If false, treat all pixels as non-specular (specular mask = ones)
     apply_specular_mask_to_source_image: true
-    erode_camera_mask: 0
+    erode_camera_mask: 10
     erode_specular_mask: 0
+    specular_white_threshold: 0.75
     export_folder: 'val' # train, val
     preprocessing:
         downsize: 4 # 1, 2, 4, 8    # This is used instead of resize to only select dimensions divisible by 8
@@ -23,10 +24,10 @@ data:
             enable: false   # Set to false for export
     homography_adaptation:
         enable: true
-        num: 50  
+        num: 100  
         aggregation: 'sum' # Just use sum
         filter_counts: 0
-        valid_border_margin: 6
+        valid_border_margin: 3
         homographies:
             params:
                 translation: true

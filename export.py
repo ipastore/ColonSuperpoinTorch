@@ -18,6 +18,7 @@ import numpy as np
 from imageio import imread
 from tqdm import tqdm
 from tensorboardX import SummaryWriter
+import cv2
 
 ## torch
 import torch
@@ -66,6 +67,59 @@ def combine_heatmap(heatmap, inv_homographies, mask_2D, device="cpu"):
 
 
 #### end util functions
+
+
+def render_colon_mask_overlay(
+    image: np.ndarray,
+    mask: np.ndarray,
+    keypoints: np.ndarray,
+    alpha: float = 0.4,
+) -> np.ndarray:
+    """Render colon export visualization with keypoints and mask overlay.
+
+    Args:
+        image: Grayscale image in ``[0, 1]`` or ``[0, 255]`` with shape ``(H, W)``.
+        mask: Combined camera × specular mask with values in ``[0, 1]``.
+        keypoints: Array of shape ``(N, 3)`` containing ``(x, y, score)`` entries.
+        alpha: Opacity factor for shaded mask regions.
+
+    Returns:
+        BGR ``uint8`` visualization showing keypoints and red-tinted masked zones.
+    """
+
+    if image.ndim != 2:
+        raise ValueError(f"Expected grayscale image, got shape {image.shape}.")
+
+    img = image.astype(np.float32, copy=False)
+    if img.max() <= 1.0:
+        img = (img * 255.0).clip(0.0, 255.0)
+    img_uint8 = img.astype(np.uint8)
+    color = cv2.cvtColor(img_uint8, cv2.COLOR_GRAY2BGR)
+
+    mask_float = np.clip(mask.astype(np.float32, copy=False), 0.0, 1.0)
+    invalid = mask_float < 0.5
+
+    overlay = color.copy()
+    red = np.zeros_like(color, dtype=np.uint8)
+    red[..., 2] = 255
+    overlay[invalid] = (
+        overlay[invalid].astype(np.float32) * (1.0 - alpha)
+        + red[invalid].astype(np.float32) * alpha
+    )
+    overlay = overlay.astype(np.uint8)
+
+    height, width = overlay.shape[:2]
+    for point in keypoints:
+        if point.shape[0] < 2:
+            continue
+        x, y = int(round(point[0])), int(round(point[1]))
+        if not (0 <= x < width and 0 <= y < height):
+            continue
+        if mask_float[y, x] < 0.5:
+            continue
+        cv2.circle(overlay, (x, y), 2, (0, 255, 0), thickness=-1)
+
+    return overlay
 
 
 def export_descriptor(config, output_dir, args):
@@ -343,26 +397,20 @@ def export_detector_homoAdapt_gpu(config, output_dir, args):
 
         ## output images for visualization labels
         if output_images:
-            img_pts = draw_keypoints(img_2D * 255, pts.transpose(), radius=1, s=1)
-            f = save_output / (str(count) + ".png")
-            if task == "Coco" or task == "Kitti" or task == "Colon":
-                f = save_output / (name + ".png")
-            saveImg(img_pts, str(f))
-            print("save img: ", f)
             if task == "Colon":
                 mask_tensor = mask_2D[0].detach()
-                mask = (
-                    mask_tensor.mul(255)
-                    .clamp(0, 255)
-                    .to(torch.uint8)
-                    .squeeze()
-                    .cpu()
-                    .numpy()
-                )
-                mask = np.ascontiguousarray(mask)
-                f = save_output / f"{name}_mask.png"
-                saveImg(mask, str(f))
-                print("save mask: ", f)
+                mask_np = mask_tensor.squeeze().cpu().numpy()
+                overlay = render_colon_mask_overlay(img_2D, mask_np, pts)
+                f = save_output / f"{name}.png"
+                saveImg(overlay, str(f))
+                print("save overlay: ", f)
+            else:
+                img_pts = draw_keypoints(img_2D * 255, pts.transpose(), radius=1, s=1)
+                f = save_output / (str(count) + ".png")
+                if task == "Coco" or task == "Kitti":
+                    f = save_output / (name + ".png")
+                saveImg(img_pts, str(f))
+                print("save img: ", f)
         count += 1
 
     print("output pseudo ground truth: ", count)

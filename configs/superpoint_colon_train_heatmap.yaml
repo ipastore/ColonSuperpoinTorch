@@ -7,6 +7,7 @@ data:
     apply_specular_mask_to_warped_images: false                                 #If false, warped images rely only on geometric validity
     erode_camera_mask: 0                                                       #Pixels shaved from camera mask borders
     erode_specular_mask: 0                                                     #Pixels shaved from specular mask highlights
+    specular_white_threshold: 0.75
     labels: logs/export/33/C_ds4_specular_camera_mask_th005_k50_vbm6_nms4_topk600/predictions
 
     gaussian_label:
