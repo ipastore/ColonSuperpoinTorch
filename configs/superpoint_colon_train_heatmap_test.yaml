@@ -4,8 +4,8 @@ data:
     images_path: './datasets/endomapper/toy_33/'  
     camera_mask_path: './datasets/endomapper/camera_mask.png'                   #If none, no camera mask is applied
     apply_specular_mask_to_source_image: true                                   #If false, skip specular mask when building the source image mask
-    apply_specular_mask_to_warped_images: false                                 #If false, warped images rely only on geometric validity
-    erode_camera_mask: 0                                                       #Pixels shaved from camera mask borders
+    apply_specular_mask_to_warped_images: true                                 #If false, warped images rely only on geometric validity
+    erode_camera_mask: 10                                                       #Pixels shaved from camera mask borders
     erode_specular_mask: 0                                                     #Pixels shaved from specular mask highlights
     specular_white_threshold: 0.75
     labels: logs/export/toy_33/SuperpointNet_gauss2/camera_specular_mask/ds4_specular_camera_mask_th005_k50_topk600_toy/predictions
@@ -51,7 +51,7 @@ data:
             patch_ratio: 0.85
             max_angle: 1.57
             allow_artifacts: true
-        valid_border_margin: 6
+        valid_border_margin: 3
 
 front_end_model: 'Train_model_heatmap'  # 'Train_model_frontend'
 
