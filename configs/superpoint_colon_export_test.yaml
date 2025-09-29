@@ -2,8 +2,8 @@ data:
     dataset: 'Colon'
     images_path: './datasets/endomapper/toy_33/'
     camera_mask_path: './datasets/endomapper/camera_mask.png'
-    # apply_specular_mask_to_source_image: true  # If false, treat all pixels as non-specular (specular mask = ones)
-    apply_specular_mask_to_source_image: true
+    # apply_combined_mask_to_source_image: true  # If false, skip camera/specular combined mask
+    apply_combined_mask_to_source_image: true
     erode_camera_mask: 10
     erode_specular_mask: 0
     specular_white_threshold: 0.75

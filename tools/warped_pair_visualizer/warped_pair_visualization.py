@@ -156,8 +156,9 @@ def visualize_pairs(
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    saved = 0
     for index, batch in enumerate(loader):
-        if index >= num_samples:
+        if saved >= num_samples:
             break
         sample = {k: _extract_batch_item(v) for k, v in batch.items()}
         sample_np = {k: _tensor_to_numpy(v) for k, v in sample.items()}
@@ -192,6 +193,15 @@ def visualize_pairs(
         filename = output_dir / f"{index:03d}_{sample_name}.png"
         cv2.imwrite(str(filename), combined)
         logging.info("Saved %s", filename)
+        saved += 1
+
+    if saved < num_samples:
+        logging.info(
+            "Requested %d samples but only %d were available for split '%s'.",
+            num_samples,
+            saved,
+            split,
+        )
 
 
 def parse_args() -> argparse.Namespace:
