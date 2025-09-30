@@ -193,12 +193,12 @@ class Colon(data.Dataset):
             raise ValueError(f"Expected 2D grayscale image, got shape {image.shape}.")
 
         # Check image size and determine crop parameters
-        accepted_shapes = [(960, 1344), (1012, 1350)]       # height, width
+        accepted_shapes = [(992, 1344), (1012, 1350)]       # height, width
 
         if image.shape not in accepted_shapes:
             raise ValueError(f"Unexpected image shape {image.shape}. Accepted shapes: {accepted_shapes}.")
 
-        target_shape = (960, 1344)                          #height, width
+        target_shape = (992, 1344)                          # height, width
 
         # For images of set33 (LightDepth) we only need a center crop
         if image.shape[0] == 1012 and image.shape[1] == 1350:

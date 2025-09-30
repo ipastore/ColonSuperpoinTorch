@@ -2,7 +2,7 @@ data:
     dataset: 'Colon' 
 
     images_path: './datasets/endomapper/toy_33/'  
-    camera_mask_path: './datasets/endomapper/camera_mask.png'                   #If none, no camera mask is applied
+    camera_mask_path: './datasets/endomapper/camera_mask_992_1344.png'          #If none, no camera mask is applied
     apply_combined_mask_to_source_image: true                                   #If false, skip camera/specular combined mask when building source mask
     apply_combined_mask_to_warped_images: false                                  #If false, warped images rely only on geometric validity. If apply_combined_mask_to_source_image is false, this has no effect
     erode_camera_mask: 10                                                       #Pixels shaved from camera mask borders
@@ -18,7 +18,7 @@ data:
     cache_in_memory: false
     preprocessing:
         downsize: 4 
-        # 1 = [960, 1344], 2 = [480, 672], 4 = [240, 336], 8 = [120, 168]
+        # 1 = [992, 1344], 2 = [496, 672], 4 = [248, 336], 8 = [124, 168]
     augmentation:
         photometric:
             enable: true

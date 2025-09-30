@@ -22,9 +22,12 @@ def get_save_path(output_dir):
     :param output_dir:
     :return:
     """
-    save_path = Path(output_dir)
-    save_path = save_path / 'checkpoints'
+    save_path = Path(output_dir) / 'checkpoints'
     logging.info('=> will save everything to {}'.format(save_path))
+    if save_path.exists() and any(save_path.iterdir()):
+        raise FileExistsError(
+            f"Checkpoint directory {save_path} already contains files. Choose a new exper_name or clean it up."
+        )
     os.makedirs(save_path, exist_ok=True)
     return save_path
 
@@ -184,4 +187,3 @@ def pretrainedLoader(net, optimizer, epoch, path, mode='full', full_path=False):
 
 if __name__ == '__main__':
     net = modelLoader(model='SuperPointNet')
-

@@ -292,6 +292,12 @@ def export_detector_homoAdapt_gpu(config, output_dir, args):
     os.makedirs(save_path, exist_ok=True)
     os.makedirs(save_output, exist_ok=True)
 
+    existing_preds = list(save_output.glob("*.npz"))
+    if existing_preds:
+        raise FileExistsError(
+            f"Predictions already exist in {save_output}. Remove or choose a new output folder."
+        )
+
     # data loading
     from utils.loader import dataLoader_test as dataLoader
 
@@ -357,8 +363,9 @@ def export_detector_homoAdapt_gpu(config, output_dir, args):
         if check_exist:
             p = Path(save_output, "{}.npz".format(name))
             if p.exists():
-                logging.info("file %s exists. skip the sample.", name)
-                continue
+                raise FileExistsError(
+                    f"Label file {p} already exists. Aborting export to avoid overwriting."
+                )
 
         # pass through network
         heatmap = fe.run(img, onlyHeatmap=True, train=False)

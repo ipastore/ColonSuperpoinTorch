@@ -1,7 +1,7 @@
 data:
     dataset: 'Colon'
     images_path: './datasets/endomapper/toy_33/'
-    camera_mask_path: './datasets/endomapper/camera_mask.png'
+    camera_mask_path: './datasets/endomapper/camera_mask_992_1344.png'
     # apply_combined_mask_to_source_image: true  # If false, skip camera/specular combined mask
     apply_combined_mask_to_source_image: true
     erode_camera_mask: 10
@@ -10,10 +10,10 @@ data:
     export_folder: 'val' # train, val
     preprocessing:
         downsize: 4 # 1, 2, 4, 8    # This is used instead of resize to only select dimensions divisible by 8
-        # 1 = resize: [960, 1344]   # Original size of Endomapper images
-        # 2 = resize: [480, 672]
-        # 4 = resize: [240, 336]     # training size of superpoint paper
-        # 8 = resize: [120, 168]
+        # 1 = resize: [992, 1344]   # Original size of Endomapper images
+        # 2 = resize: [496, 672]
+        # 4 = resize: [248, 336]     # training size of superpoint paper
+        # 8 = resize: [124, 168]
 
     gaussian_label: 
         enable: false # Set to false for export
