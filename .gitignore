@@ -29,3 +29,7 @@ results/
 
 # Venv
 .venv/
+
+# MacOS
+.DS_Store
+
