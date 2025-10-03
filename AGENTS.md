@@ -1,7 +1,12 @@
 
 # AGENTS.md
 
-This document tells the AI coding agent **how to work in this repository**: 
+This document tells the AI coding agent **how to work in this repository**:
+
+## 0) Context and MCPs
+First, when processing a request, always search if you could use a tool from the installed MCP servers.
+
+If the request is about the DGX usage, read docs/DGX_manual.md
 
 ## 1) Repository layout
 
