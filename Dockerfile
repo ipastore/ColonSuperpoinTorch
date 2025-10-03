@@ -1,10 +1,11 @@
 # Multi-GPU development image for ColonSuperpoinTorch
-FROM nvidia/cuda:12.2.0-cudnn8-runtime-ubuntu22.04
+FROM nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
 ENV CONDA_DIR=/opt/conda \
-    CONDA_ENV=py38-sp
+    CONDA_ENV=py38-sp \
+    PATH=/opt/conda/bin:$PATH
 
 # Base system packages required for building Python wheels and OpenCV runtime
 RUN apt-get update && \
@@ -40,7 +41,8 @@ RUN conda create -y -n "$CONDA_ENV" python=3.8 pip && \
 WORKDIR /workspace/ColonSuperpoinTorch
 COPY requirements_py38.txt requirements_py38.txt
 
-RUN conda activate "$CONDA_ENV" && \
+RUN . "$CONDA_DIR/etc/profile.d/conda.sh" && \
+    conda activate "$CONDA_ENV" && \
     conda install -y -c pytorch pytorch==1.10.2 torchvision==0.11.3 cudatoolkit=11.3 && \
     pip install --no-cache-dir -r requirements_py38.txt && \
     conda clean -afy

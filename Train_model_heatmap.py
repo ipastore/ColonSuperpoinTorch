@@ -75,7 +75,7 @@ class Train_model_heatmap(Train_model_frontend):
         print("check config!!", self.config)
 
         # init parameters
-        self.device = device
+        self.device = torch.device(device)
         self.save_path = save_path
         self._train = True
         self._eval = True

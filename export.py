@@ -359,6 +359,7 @@ def export_detector_homoAdapt_gpu(config, output_dir, args):
         )
         # sample = test_set[i]
         name = sample["name"][0]
+        print("************************************************************")
         logging.info(f"name: {name}")
         if check_exist:
             p = Path(save_output, "{}.npz".format(name))

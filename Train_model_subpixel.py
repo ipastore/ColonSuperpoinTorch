@@ -42,7 +42,7 @@ class Train_model_subpixel(Train_model_frontend):
         print("using: Train_model_subpixel")
         self.config = self.default_config
         self.config = dict_update(self.config, config)
-        self.device=device
+        self.device = torch.device(device)
         self.save_path = save_path
         self.cell_size = 8
         self.max_iter = config['train_iter']

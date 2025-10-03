@@ -63,7 +63,8 @@ class SuperPointFrontend_torch(object):
         self.pts_subpixel = None
         self.patches = None
 
-        self.device=device
+        self.device = torch.device(device)
+        self.cuda = cuda or self.device.type == "cuda"
         self.subpixel = False
         if self.config['model']['subpixel']['enable']:
             self.subpixel = True
@@ -114,9 +115,17 @@ class SuperPointFrontend_torch(object):
         self.net = self.net.to(self.device)
         # self.net.eval()
 
-    def net_parallel(self):
-        print("=== Let's use", torch.cuda.device_count(), "GPUs!")
-        self.net = nn.DataParallel(self.net)
+    def net_parallel(self) -> None:
+        """Wrap the network in `nn.DataParallel` when multiple CUDA GPUs exist."""
+        if self.device.type != "cuda":
+            print(f"=== DataParallel skipped (device={self.device.type})")
+            return
+        gpu_count = torch.cuda.device_count()
+        if gpu_count <= 1:
+            print(f"=== DataParallel skipped ({gpu_count} CUDA device)")
+            return
+        print(f"=== Let's use {gpu_count} GPUs!")
+        self.net = nn.DataParallel(self.net).to(self.device)
 
     def nms_fast(self, in_corners, H, W, dist_thresh):
         """

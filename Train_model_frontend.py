@@ -89,7 +89,7 @@ class Train_model_frontend(object):
         print("check config!!", self.config)
 
         # init parameters
-        self.device = device
+        self.device = torch.device(device)
         self.save_path = save_path
         self._train = True
         self._eval = True
@@ -159,12 +159,18 @@ class Train_model_frontend(object):
         put network and optimizer to multiple gpus
         :return:
         """
-        print("=== Let's use", torch.cuda.device_count(), "GPUs!")
-        self.net = nn.DataParallel(self.net)
+        if self.device.type != "cuda":
+            print(f"=== DataParallel skipped (device={self.device.type})")
+            return
+        gpu_count = torch.cuda.device_count()
+        if gpu_count <= 1:
+            print(f"=== DataParallel skipped ({gpu_count} CUDA device)")
+            return
+        print(f"=== Let's use {gpu_count} GPUs!")
+        self.net = nn.DataParallel(self.net).to(self.device)
         self.optimizer = self.adamOptim(
             self.net, lr=self.config["model"]["learning_rate"]
         )
-        pass
 
     def adamOptim(self, net, lr):
         """

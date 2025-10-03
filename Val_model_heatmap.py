@@ -36,7 +36,7 @@ class Val_model_heatmap(SuperPointFrontend_torch):
         self.model = self.config['name']
         self.params = self.config['params']
         self.weights_path = self.config['pretrained']
-        self.device=device
+        self.device = torch.device(device)
 
         ## other parameters
 
@@ -201,7 +201,6 @@ if __name__ == '__main__':
         print("desc_sparse[0]: ", desc_sparse[0].shape)
 
 # pts, desc, _, heatmap
-
 
 
 

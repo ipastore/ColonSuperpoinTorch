@@ -1,7 +1,7 @@
 data:
     dataset: 'Colon'
     images_path: './datasets/endomapper/toy_33/'
-    camera_mask_path: './datasets/endomapper/camera_mask_992_1344.png'
+    camera_mask_path: './datasets/endomapper/camera_mask_1012_1350.png'
     # apply_combined_mask_to_source_image: true  # If false, skip camera/specular combined mask
     apply_combined_mask_to_source_image: true
     erode_camera_mask: 10
@@ -24,7 +24,7 @@ data:
             enable: false   # Set to false for export
     homography_adaptation:
         enable: true
-        num: 100  
+        num: 2  
         aggregation: 'sum' # Just use sum
         filter_counts: 0
         valid_border_margin: 3
@@ -42,7 +42,7 @@ data:
                 
 
 training:
-    workers_test: 2 # Set to 0 for debugging, 2 for production
+    workers_test: 0 # Set to 0 for debugging, 2 for production
 
 model:
     # name: 'SuperPointNet_pretrained'        # Choose this one to load wieghts from superpoint_v1.pth
