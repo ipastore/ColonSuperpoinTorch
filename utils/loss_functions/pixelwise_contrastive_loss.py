@@ -157,8 +157,15 @@ class PixelwiseContrastiveLoss(object):
             def sampleDescriptors(image_a_pred, matches_a, mode, norm=False):
                 image_a_pred = image_a_pred.unsqueeze(0) # torch [1, D, H, W]
                 matches_a.unsqueeze_(0).unsqueeze_(2)
-                matches_a_descriptors = F.grid_sample(image_a_pred, matches_a, mode=mode, align_corners=True)
-                matches_a_descriptors = matches_a_descriptors.squeeze().transpose(0,1)
+
+                if image_a_pred.device.type == "mps":
+                    image_a_pred_cpu = image_a_pred.to("cpu")
+                    matches_a_cpu = matches_a.to("cpu")
+                    matches_a_descriptors = F.grid_sample(image_a_pred_cpu, matches_a_cpu, mode=mode, align_corners=True)
+                    matches_a_descriptors = matches_a_descriptors.to(image_a_pred.device)
+                else:
+                    matches_a_descriptors = F.grid_sample(image_a_pred, matches_a, mode=mode, align_corners=True)
+                    matches_a_descriptors = matches_a_descriptors.squeeze().transpose(0,1)
                 
                 # print("image_a_pred: ", image_a_pred.shape)
                 # print("matches_a: ", matches_a.shape)

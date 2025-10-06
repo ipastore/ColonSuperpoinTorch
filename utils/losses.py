@@ -40,6 +40,16 @@ def pts_to_bbox(points, patch_size):
 # torchvision roi pooling
 def _roi_pool(pred_heatmap, rois, patch_size=8):
     from torchvision.ops import roi_pool
+
+    # TODO: fix to use a fallback if possible when using mps or cpu. roi_pool is implemented for cuda.
+    # OR PYTORHC_ENABNLE_MPS_FALLBACK=1. Or implement an if statement. Could we reuse roi_pool with cpu? Review
+
+    if not torch.cuda.is_available():
+        cpu_heatmap = pred_heatmap.cpu()
+        cpu_rois = rois.float().cpu()
+        patches = roi_pool(cpu_heatmap, cpu_rois, (patch_size, patch_size), spatial_scale=1.0)
+        return patches.to(pred_heatmap.device)
+    
     patches = roi_pool(pred_heatmap, rois.float(), (patch_size, patch_size), spatial_scale=1.0)
     return patches
     pass

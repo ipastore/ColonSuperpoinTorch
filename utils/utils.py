@@ -433,6 +433,7 @@ def labels2Dto3D_flattened(labels, cell_size):
     :return:
          labels: tensors[batch_size, 65, Hc, Wc]
     '''
+    device = get_torch_device()
     batch_size, channel, H, W = labels.shape
     Hc, Wc = H // cell_size, W // cell_size
     space2depth = SpaceToDepth(8)
@@ -445,7 +446,7 @@ def labels2Dto3D_flattened(labels, cell_size):
     # labels = labels.reshape(batch_size, 1, cell_size ** 2, Hc, Wc)
     # labels = labels.view(batch_size, cell_size ** 2, Hc, Wc)
 
-    dustbin = torch.ones((batch_size, 1, Hc, Wc)).cuda()
+    dustbin = torch.ones((batch_size, 1, Hc, Wc)).to(device)
     # labels = torch.cat((labels, dustbin.view(batch_size, 1, Hc, Wc)), dim=1)
     labels = torch.cat((labels*2, dustbin.view(batch_size, 1, Hc, Wc)), dim=1)
     labels = torch.argmax(labels, dim=1)
@@ -605,11 +606,12 @@ def box_nms(prob, size, iou=0.1, min_prob=0.01, keep_top_k=0):
     min_prob: a threshold under which all probabilities are discarded before NMS.
     keep_top_k: an integer, the number of top scores to keep.
     """
+    device = get_torch_device()
     pts = torch.nonzero(prob > min_prob).float() # [N, 2]
     prob_nms = torch.zeros_like(prob)
     if pts.nelement() == 0:
         return prob_nms
-    size = torch.tensor(size/2.).cuda()
+    size = torch.tensor(size/2.).to(device)
     boxes = torch.cat([pts-size, pts+size], dim=1) # [N, 4]
     scores = prob[pts[:, 0].long(), pts[:, 1].long()]
     if keep_top_k != 0:

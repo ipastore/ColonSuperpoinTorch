@@ -3,7 +3,7 @@ data:
 
     images_path: './datasets/endomapper/toy_33/'  
     camera_mask_path: './datasets/endomapper/camera_mask_992_1344.png'          #If none, no camera mask is applied
-    apply_combined_mask_to_source_image: true                                   #If false, skip camera/specular combined mask when building source mask
+    apply_combined_mask_to_source_image: false                                   #If false, skip camera/specular combined mask when building source mask
     apply_combined_mask_to_warped_images: false                                  #If false, warped images rely only on geometric validity. If apply_combined_mask_to_source_image is false, this has no effect
     erode_camera_mask: 10                                                       #Pixels shaved from camera mask borders
     erode_specular_mask: 0                                                     #Pixels shaved from specular mask highlights
@@ -56,8 +56,8 @@ data:
 front_end_model: 'Train_model_heatmap'  # 'Train_model_frontend'
 
 training:
-    workers_train: 8 # 16
-    workers_val: 4 # 2
+    workers_train: 0 # 16
+    workers_val: 0 # 2
 
 model:
     # name: 'magic_point'

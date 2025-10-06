@@ -359,7 +359,6 @@ def export_detector_homoAdapt_gpu(config, output_dir, args):
         )
         # sample = test_set[i]
         name = sample["name"][0]
-        print("************************************************************")
         logging.info(f"name: {name}")
         if check_exist:
             p = Path(save_output, "{}.npz".format(name))
@@ -396,7 +395,7 @@ def export_detector_homoAdapt_gpu(config, output_dir, args):
 
         ## - make directories
         filename = str(name)
-        if task == "Kitti" or "Kitti_inh":
+        if task == "Kitti" or task == "Kitti_inh":
             scene_name = sample["scene_name"][0]
             os.makedirs(Path(save_output, scene_name), exist_ok=True)
 
