@@ -6,6 +6,9 @@
 """
 
 import os
+
+os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+
 import numpy as np
 import torch
 from pathlib import Path
@@ -21,7 +24,6 @@ def get_torch_device() -> torch.device:
     if torch.cuda.is_available():
         return torch.device("cuda")
     if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-        os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
         return torch.device("mps")
     return torch.device("cpu")
 ###### check

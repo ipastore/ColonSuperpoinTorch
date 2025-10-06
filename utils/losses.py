@@ -7,6 +7,7 @@
 # losse
 import torch
 
+
 def print_var(points):
     print("points: ", points.shape)
     print("points: ", points)
@@ -21,13 +22,29 @@ def pts_to_bbox(points, patch_size):
         bbox: (x1, y1, x2, y2)
     """
 
-    shift_l = (patch_size+1) / 2
+    points = points.float()
+    shift_l = (patch_size + 1) / 2
     shift_r = patch_size - shift_l
-    pts_l = points-shift_l
-    pts_r = points+shift_r+1
-    bbox = torch.stack((pts_l[:,1], pts_l[:,0], pts_r[:,1], pts_r[:,0]), dim=1)
+    pts_l = points - shift_l
+    pts_r = points + shift_r + 1
+    bbox = torch.stack((pts_l[:, 1], pts_l[:, 0], pts_r[:, 1], pts_r[:, 0]), dim=1)
     return bbox
     pass
+
+
+
+def pts_to_bbox_numpy(points, patch_size):
+    import numpy as np
+
+    shift_l = (patch_size + 1) / 2
+    shift_r = patch_size - shift_l
+
+    y, x = points[:, 0], points[:, 1]
+    x1 = x - shift_l
+    y1 = y - shift_l
+    x2 = x + shift_r + 1
+    y2 = y + shift_r + 1
+    return np.column_stack((x1, y1, x2, y2))
 
 # roi pooling
 # from utils.losses import _roi_pool
@@ -41,17 +58,24 @@ def pts_to_bbox(points, patch_size):
 def _roi_pool(pred_heatmap, rois, patch_size=8):
     from torchvision.ops import roi_pool
 
-    # TODO: fix to use a fallback if possible when using mps or cpu. roi_pool is implemented for cuda.
-    # OR PYTORHC_ENABNLE_MPS_FALLBACK=1. Or implement an if statement. Could we reuse roi_pool with cpu? Review
+    device = pred_heatmap.device
+    rois = rois.float()
 
-    if not torch.cuda.is_available():
-        cpu_heatmap = pred_heatmap.cpu()
-        cpu_rois = rois.float().cpu()
-        patches = roi_pool(cpu_heatmap, cpu_rois, (patch_size, patch_size), spatial_scale=1.0)
-        return patches.to(pred_heatmap.device)
-    
-    patches = roi_pool(pred_heatmap, rois.float(), (patch_size, patch_size), spatial_scale=1.0)
-    return patches
+    if device.type == "cuda":
+        return roi_pool(
+            pred_heatmap,
+            rois,
+            (patch_size, patch_size),
+            spatial_scale=1.0,
+        )
+
+    patches = roi_pool(
+        pred_heatmap.to("cpu"),
+        rois.to("cpu"),
+        (patch_size, patch_size),
+        spatial_scale=1.0,
+    )
+    return patches.to(device)
     pass
 
 # from utils.losses import norm_patches
@@ -98,11 +122,18 @@ def extract_patches(label_idx, image, patch_size=7):
     return:
         patches: tensor [N, 1, patch, patch]
     """
-    rois = pts_to_bbox(label_idx[:,2:], patch_size).long()
-    # filter out??
-    rois = torch.cat((label_idx[:,:1], rois), dim=1)
-    # print_var(rois)
-    # print_var(image)
+    if label_idx.device.type == "mps":
+        rois_np = pts_to_bbox_numpy(label_idx[:, 2:].detach().cpu().numpy(), patch_size)
+        rois_cpu = torch.from_numpy(rois_np).float()
+        batch_cpu = label_idx[:, :1].detach().cpu().float()
+        rois = torch.cat((batch_cpu, rois_cpu), dim=1).to(image.device)
+    else:
+        rois = pts_to_bbox(label_idx[:, 2:], patch_size)
+        batch = label_idx[:, :1].to(rois.device, dtype=rois.dtype)
+        rois = torch.cat((batch, rois), dim=1).to(image.device)
+
+    rois = rois.to(dtype=image.dtype)
+
     patches = _roi_pool(image, rois, patch_size=patch_size)
     return patches
 
@@ -134,9 +165,8 @@ def soft_argmax_2d(patches, normalized_coordinates=True):
 ## log on patches
 # from utils.losses import do_log
 def do_log(patches):
-    patches[patches<0] = 1e-6
-    patches_log = torch.log(patches)
-    return patches_log
+    eps = 1e-6
+    return torch.log(patches.clamp(min=eps))
 
 # from utils.losses import subpixel_loss
 def subpixel_loss(labels_2D, labels_res, pred_heatmap, patch_size=7):

@@ -593,7 +593,8 @@ class Train_model_frontend(object):
         # save checkpoint for resuming training
         :return:
         """
-        model_state_dict = self.net.module.state_dict()
+        model = self.net.module if hasattr(self.net, "module") else self.net
+        model_state_dict = model.state_dict()
         save_checkpoint(
             self.save_path,
             {
