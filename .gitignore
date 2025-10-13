@@ -1,6 +1,7 @@
 # Datasets
 datasets/endomapper
 datasets/COCO
+datasets/OLDendomapper
 
 # Catch all __pycache__ directories
 **/__pycache__/
