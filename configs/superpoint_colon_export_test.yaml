@@ -1,7 +1,7 @@
 data:
     dataset: 'Colon'
-    images_path: './datasets/endomapper/toy_33/'
-    camera_mask_path: './datasets/endomapper/camera_mask_1012_1350.png'
+    images_path: './datasets/endomapper/Seq_024_test/'
+    camera_mask_path: './datasets/endomapper/camera_mask_992_1344_Seq_024.png'
     # apply_combined_mask_to_source_image: true  # If false, skip camera/specular combined mask
     apply_combined_mask_to_source_image: true
     erode_camera_mask: 10

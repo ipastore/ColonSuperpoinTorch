@@ -1,13 +1,13 @@
 data:
     dataset: 'Colon'
-    images_path: './datasets/endomapper/colon_sp/'
-    camera_mask_path: './datasets/endomapper/camera_mask_992_1344.png'
+    images_path: './datasets/endomapper/all_colmap_sequences/'
+    camera_mask_path: './datasets/endomapper/camera_mask_1012_1350.png'
     # apply_combined_mask_to_source_image: false  # If false, skip camera/specular combined mask
     apply_combined_mask_to_source_image: true
     erode_camera_mask: 10
     erode_specular_mask: 0
     specular_white_threshold: 0.75
-    export_folder: 'train' # train, val
+    export_folder: 'val' # train, val
     preprocessing:
         downsize: 4 # 1, 2, 4, 8    # This is used instead of resize to only select dimensions divisible by 8
         # 1 = resize: [992, 1344]   # Original size of Endomapper images
@@ -52,7 +52,7 @@ model:
     }    
     batch_size: 1
     eval_batch_size: 1
-    detection_threshold: 0.005 
+    detection_threshold: 0.015 # 0.005 0.015 0.0005
     nms: 4 # 4
     top_k: 600
     subpixel:
