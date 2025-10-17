@@ -198,6 +198,7 @@ class Train_model_frontend(object):
                 amsgrad=amsgrad,
                 weight_decay=weight_decay,
             )
+            logging.info("Using AdamW optimizer with weight_decay=%.6f", weight_decay)
         else:
             optimizer = optim.Adam(
                 net.parameters(),
@@ -205,6 +206,7 @@ class Train_model_frontend(object):
                 betas=(0.9, 0.999),
                 amsgrad=amsgrad,
             )
+            logging.info("Using Adam optimizer without weight decay")
 
         scheduler = self._build_scheduler(optimizer)
         return optimizer, scheduler
@@ -212,6 +214,7 @@ class Train_model_frontend(object):
     def _build_scheduler(self, optimizer):
         scheduler_config = self.config["model"].get("scheduler", {})
         if not scheduler_config or not scheduler_config.get("enable", False):
+            logging.info("Learning rate scheduler is disabled.")
             return None
         scheduler_type = scheduler_config.get("type", "step").lower()
         from torch.optim import lr_scheduler
@@ -220,16 +223,19 @@ class Train_model_frontend(object):
             step_default = max(1, self.max_iter // 3)
             step_size = int(scheduler_config.get("step_size", step_default))
             gamma = float(scheduler_config.get("gamma", 0.1))
+            logging.info("Using StepLR scheduler (step_size=%d, gamma=%.6f)", step_size, gamma)
             return lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
         if scheduler_type == "cosine":
             t_max = int(scheduler_config.get("T_max", self.max_iter))
             eta_min = float(scheduler_config.get("eta_min", 0.0))
+            logging.info("Using CosineAnnealingLR scheduler (T_max=%d, eta_min=%.6f)", t_max, eta_min)
             return lr_scheduler.CosineAnnealingLR(optimizer, T_max=t_max, eta_min=eta_min)
         if scheduler_type == "plateau":
             patience = int(
                 scheduler_config.get("patience", 500)
             )
             factor = float(scheduler_config.get("factor", 0.1))
+            logging.info("Using ReduceLROnPlateau scheduler (patience=%d, factor=%.6f)", patience, factor)
             return lr_scheduler.ReduceLROnPlateau(
                 optimizer, patience=patience, factor=factor
             )
