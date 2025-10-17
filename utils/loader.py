@@ -167,7 +167,7 @@ def modelLoader(model='SuperPointNet', **options):
 
 # mode: 'full' means the formats include the optimizer and epoch
 # full_path: if not full path, we need to go through another helper function
-def pretrainedLoader(net, optimizer, epoch, path, mode='full', full_path=False):
+def pretrainedLoader(net, optimizer, epoch, path, mode='full', full_path=False, scheduler=None):
     # load checkpoint
     if full_path == True:
         checkpoint = torch.load(path)
@@ -177,6 +177,10 @@ def pretrainedLoader(net, optimizer, epoch, path, mode='full', full_path=False):
     if mode == 'full':
         net.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        if scheduler is not None:
+            scheduler_state = checkpoint.get("scheduler_state_dict")
+            if scheduler_state:
+                scheduler.load_state_dict(scheduler_state)
 #         epoch = checkpoint['epoch']
         epoch = checkpoint['n_iter']
 #         epoch = 0

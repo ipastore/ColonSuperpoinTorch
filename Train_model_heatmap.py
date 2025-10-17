@@ -81,6 +81,7 @@ class Train_model_heatmap(Train_model_frontend):
         self._eval = True
         self.cell_size = 8
         self.subpixel = False
+        self.scheduler = None
 
         self.max_iter = config["train_iter"]
 
@@ -396,6 +397,7 @@ class Train_model_heatmap(Train_model_frontend):
         if train:
             loss.backward()
             self.optimizer.step()
+            self._step_scheduler(loss.item())
 
         if n_iter % tb_interval == 0 or task == "val":
             logging.info(

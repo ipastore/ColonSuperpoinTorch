@@ -72,6 +72,16 @@ model:
     eval_batch_size: 16 # 32 
     learning_rate: 0.0001 # 0.0001
     amsgrad: true
+    weight_decay: 0.0  # When > 0, use AdamW instead of Adam
+    scheduler:
+        enable: false
+        type: "step"  # Options: "step", "cosine", "plateau" 
+        step_size: 10000
+        gamma: 0.5
+        T_max: 400000  # defaults to train_iter
+        eta_min: 0.0
+        patience: 5
+        factor: 0.1
     detection_threshold: 0.005 # 0.015
     lambda_loss: 1 # 1 
     nms: 4

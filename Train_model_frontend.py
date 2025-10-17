@@ -64,7 +64,12 @@ class Train_model_frontend(object):
         "train_iter": 170000,
         "save_interval": 2000,
         "tensorboard_interval": 200,
-        "model": {"subpixel": {"enable": False}, "amsgrad": False},
+        "model": {
+            "subpixel": {"enable": False},
+            "amsgrad": False,
+            "weight_decay": 0.0,
+            "scheduler": {"enable": False, "type": "step"},
+        },
     }
 
     def __init__(self, config, save_path=Path("."), device="cpu", verbose=False):
@@ -96,6 +101,7 @@ class Train_model_frontend(object):
         self.cell_size = 8
         self.subpixel = False
         self.loss = 0
+        self.scheduler = None
 
         self.max_iter = config["train_iter"]
 
@@ -168,7 +174,7 @@ class Train_model_frontend(object):
             return
         print(f"=== Let's use {gpu_count} GPUs!")
         self.net = nn.DataParallel(self.net).to(self.device)
-        self.optimizer = self.adamOptim(
+        self.optimizer, self.scheduler = self.adamOptim(
             self.net, lr=self.config["model"]["learning_rate"]
         )
 
@@ -180,13 +186,68 @@ class Train_model_frontend(object):
         :return:
         """
         amsgrad = self.config["model"].get("amsgrad", True)
+        weight_decay = float(self.config["model"].get("weight_decay", 0.0))
         print(f"adam optimizer (amsgrad={amsgrad})")
         import torch.optim as optim
 
-        optimizer = optim.Adam(
-            net.parameters(), lr=lr, betas=(0.9, 0.999), amsgrad=amsgrad
-        )
-        return optimizer
+        if weight_decay > 0:
+            optimizer = optim.AdamW(
+                net.parameters(),
+                lr=lr,
+                betas=(0.9, 0.999),
+                amsgrad=amsgrad,
+                weight_decay=weight_decay,
+            )
+        else:
+            optimizer = optim.Adam(
+                net.parameters(),
+                lr=lr,
+                betas=(0.9, 0.999),
+                amsgrad=amsgrad,
+            )
+
+        scheduler = self._build_scheduler(optimizer)
+        return optimizer, scheduler
+
+    def _build_scheduler(self, optimizer):
+        scheduler_config = self.config["model"].get("scheduler", {})
+        if not scheduler_config or not scheduler_config.get("enable", False):
+            return None
+        scheduler_type = scheduler_config.get("type", "step").lower()
+        from torch.optim import lr_scheduler
+
+        if scheduler_type == "step":
+            step_default = max(1, self.max_iter // 3)
+            step_size = int(scheduler_config.get("step_size", step_default))
+            gamma = float(scheduler_config.get("gamma", 0.1))
+            return lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
+        if scheduler_type == "cosine":
+            t_max = int(scheduler_config.get("T_max", self.max_iter))
+            eta_min = float(scheduler_config.get("eta_min", 0.0))
+            return lr_scheduler.CosineAnnealingLR(optimizer, T_max=t_max, eta_min=eta_min)
+        if scheduler_type == "plateau":
+            patience = int(
+                scheduler_config.get("patience", 500)
+            )
+            factor = float(scheduler_config.get("factor", 0.1))
+            return lr_scheduler.ReduceLROnPlateau(
+                optimizer, patience=patience, factor=factor
+            )
+        logging.warning("Unsupported scheduler type '%s'. Skipping.", scheduler_type)
+        return None
+
+    def _step_scheduler(self, metric):
+        if self.scheduler is None:
+            return
+        from torch.optim.lr_scheduler import ReduceLROnPlateau
+
+        if isinstance(self.scheduler, ReduceLROnPlateau):
+            if metric is None:
+                logging.debug("Skipping ReduceLROnPlateau step: metric is None")
+                return
+            self.scheduler.step(metric)
+        else:
+            self.scheduler.step()
 
     def loadModel(self):
         """
@@ -199,7 +260,9 @@ class Train_model_frontend(object):
         print("model: ", model)
         net = modelLoader(model=model, **params).to(self.device)
         logging.info("=> setting adam solver")
-        optimizer = self.adamOptim(net, lr=self.config["model"]["learning_rate"])
+        optimizer, scheduler = self.adamOptim(
+            net, lr=self.config["model"]["learning_rate"]
+        )
 
         n_iter = 0
         ## new model or load pretrained
@@ -211,7 +274,13 @@ class Train_model_frontend(object):
             mode = "" if path[-4:] == ".pth" else "full" # the suffix is '.pth' or 'tar.gz'
             logging.info("load pretrained model from: %s", path)
             net, optimizer, n_iter = pretrainedLoader(
-                net, optimizer, n_iter, path, mode=mode, full_path=True
+                net,
+                optimizer,
+                n_iter,
+                path,
+                mode=mode,
+                full_path=True,
+                scheduler=scheduler,
             )
             logging.info("successfully load pretrained model from: %s", path)
 
@@ -223,6 +292,7 @@ class Train_model_frontend(object):
 
         self.net = net
         self.optimizer = optimizer
+        self.scheduler = scheduler
         self.n_iter = setIter(n_iter)
         pass
 
@@ -553,6 +623,7 @@ class Train_model_frontend(object):
         if train:
             loss.backward()
             self.optimizer.step()
+            self._step_scheduler(loss.item())
 
         self.addLosses2tensorboard(losses, task)
         if n_iter % tb_interval == 0 or task == "val":
@@ -601,6 +672,9 @@ class Train_model_frontend(object):
                 "n_iter": self.n_iter + 1,
                 "model_state_dict": model_state_dict,
                 "optimizer_state_dict": self.optimizer.state_dict(),
+                "scheduler_state_dict": self.scheduler.state_dict()
+                if self.scheduler is not None
+                else None,
                 "loss": self.loss,
             },
             self.n_iter,
